@@ -40,4 +40,8 @@ public class Rating {
         rating.value = value;
         return rating;
     }
+
+    @Override public String toString() {
+        return person.name + " rates " + movie.name + " with " + value;
+    }
 }

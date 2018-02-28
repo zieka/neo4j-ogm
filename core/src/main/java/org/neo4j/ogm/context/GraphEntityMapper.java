@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 import org.neo4j.ogm.annotation.EndNode;
+import org.neo4j.ogm.annotation.Ordered;
 import org.neo4j.ogm.annotation.StartNode;
 import org.neo4j.ogm.exception.core.MappingException;
 import org.neo4j.ogm.metadata.ClassInfo;
@@ -444,12 +445,19 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
             // is this a relationship entity we're trying to map?
             Object relationshipEntity = mappingContext.getRelationshipEntity(edge.getId());
             if (relationshipEntity != null) {
+                int sortOrder = -1;
+                for (Property<String, Object> stringObjectProperty : edge.getPropertyList()) {
+                    if (stringObjectProperty.getKey().equalsIgnoreCase(Ordered.ORDERED_PROPERTY)) {
+                        Object value = stringObjectProperty.getValue();
+                        sortOrder = ((Long) value).intValue();
+                    }
+                }
                 // establish a relationship between
                 FieldInfo outgoingWriter = findIterableWriter(instance, relationshipEntity, edge.getType(), OUTGOING);
                 if (outgoingWriter != null) {
                     entityCollector.collectRelationship(edge.getStartNode(),
                         ClassUtils.getType(outgoingWriter.typeParameterDescriptor()), edge.getType(), OUTGOING,
-                        edge.getId(), edge.getEndNode(), relationshipEntity);
+                        edge.getId(), edge.getEndNode(), relationshipEntity, sortOrder);
                     relationshipsToRegister.add(
                         new MappedRelationship(edge.getStartNode(), edge.getType(), edge.getEndNode(), edge.getId(),
                             instance.getClass(), ClassUtils.getType(outgoingWriter.typeParameterDescriptor())));
@@ -458,7 +466,7 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
                 if (incomingWriter != null) {
                     entityCollector.collectRelationship(edge.getEndNode(),
                         ClassUtils.getType(incomingWriter.typeParameterDescriptor()), edge.getType(), INCOMING,
-                        edge.getId(), edge.getStartNode(), relationshipEntity);
+                        edge.getId(), edge.getStartNode(), relationshipEntity, sortOrder);
                     relationshipsToRegister.add(
                         new MappedRelationship(edge.getStartNode(), edge.getType(), edge.getEndNode(), edge.getId(),
                             instance.getClass(), ClassUtils.getType(incomingWriter.typeParameterDescriptor())));

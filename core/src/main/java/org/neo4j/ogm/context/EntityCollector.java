@@ -47,9 +47,9 @@ class EntityCollector {
      * @param target                The element to add to the collection that will eventually be set on the owning type
      */
     public void collectRelationship(Long sourceId, Class startPropertyType, String relationshipType,
-        String relationshipDirection, long relationshipId, long targetId, Object target) {
+        String relationshipDirection, long relationshipId, long targetId, Object target, int sortOrder) {
         record(sourceId, startPropertyType, relationshipType, relationshipDirection,
-            new TargetTriple(relationshipId, targetId, target));
+            new TargetTriple(relationshipId, targetId, target, sortOrder));
     }
 
     /**
@@ -71,7 +71,8 @@ class EntityCollector {
     private void record(Long owningEntityId, Class startPropertyType, String relationshipType,
         String relationshipDirection, TargetTriple triple) {
         this.collected.computeIfAbsent(owningEntityId, k -> new HashMap<>());
-        DirectedRelationship directedRelationship = new DirectedRelationship(relationshipType, relationshipDirection);
+        DirectedRelationship directedRelationship = new DirectedRelationship(relationshipType, relationshipDirection,
+            triple.sortOrder != -1);
         this.collected.get(owningEntityId).computeIfAbsent(directedRelationship, k -> new HashMap<>());
         this.collected.get(owningEntityId).get(directedRelationship)
             .computeIfAbsent(startPropertyType, k -> new HashSet<>());
@@ -88,7 +89,7 @@ class EntityCollector {
 
                 targetTypeMap.forEach((targetType, entityTriples) -> {
 
-                    List<Object> entities = entityTriples.stream().map(TargetTriple::getTarget).collect(toList());
+                    List<Object> entities = entityTriples.stream().sorted(TargetTriple::sort).map(TargetTriple::getTarget).collect(toList());
 
                     handler.handle(sourceId, type, direction, targetType, entities);
                 });
@@ -113,20 +114,25 @@ class EntityCollector {
      */
     private static class TargetTriple {
 
+        private static final int UNSET_VALUE = -1;
+
         private final long relationshipId;
         private final long targetGraphId;
         private final Object target;
+        private final int sortOrder;
 
-        public TargetTriple(long targetGraphId, Object target) {
+        TargetTriple(long targetGraphId, Object target) {
             this.relationshipId = -1;
             this.targetGraphId = targetGraphId;
             this.target = target;
+            this.sortOrder = UNSET_VALUE;
         }
 
-        public TargetTriple(long relationshipId, long targetGraphId, Object target) {
+        TargetTriple(long relationshipId, long targetGraphId, Object target, int sortOrder) {
             this.relationshipId = relationshipId;
             this.targetGraphId = targetGraphId;
             this.target = requireNonNull(target);
+            this.sortOrder = sortOrder;
         }
 
         public long getRelationshipId() {
@@ -139,6 +145,13 @@ class EntityCollector {
 
         public Object getTarget() {
             return target;
+        }
+
+        static int sort(TargetTriple self, TargetTriple other) {
+            if (self.sortOrder == -1 || other.sortOrder == -1) {
+                return 0;
+            }
+            return Integer.compare(self.sortOrder, other.sortOrder);
         }
 
         @Override

@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.ogm.annotation.NodeEntity;
+import org.neo4j.ogm.annotation.Ordered;
 import org.neo4j.ogm.annotation.Relationship;
 
 /**
@@ -25,6 +26,7 @@ import org.neo4j.ogm.annotation.Relationship;
 @NodeEntity("PersonX")
 public class Person extends Entity {
 
+    @Ordered
     @Relationship(type = "RATED")
     public List<Rating> movieRatings = new ArrayList<>();
 

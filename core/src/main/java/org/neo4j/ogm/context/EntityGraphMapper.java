@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.ogm.annotation.Ordered;
 import org.neo4j.ogm.annotation.Relationship;
 import org.neo4j.ogm.annotation.RelationshipEntity;
 import org.neo4j.ogm.compiler.SrcTargetKey;
@@ -110,7 +111,7 @@ public class EntityGraphMapper implements EntityMapper {
                 AnnotationInfo annotationInfo = reInfo.annotationsInfo().get(RelationshipEntity.class);
                 String relationshipType = annotationInfo.get(RelationshipEntity.TYPE, null);
                 DirectedRelationship directedRelationship = new DirectedRelationship(relationshipType,
-                    Relationship.OUTGOING);
+                    Relationship.OUTGOING, false);
 
                 RelationshipBuilder relationshipBuilder = getRelationshipBuilder(compiler, entity, directedRelationship,
                     false);
@@ -341,8 +342,10 @@ public class EntityGraphMapper implements EntityMapper {
             Class startNodeType = srcInfo.getUnderlyingClass();
             Class endNodeType = ClassUtils.getType(reader.typeDescriptor());
 
+            boolean isOrdered = reader.hasAnnotation(Ordered.class);
+
             DirectedRelationship directedRelationship = new DirectedRelationship(relationshipType,
-                relationshipDirection);
+                relationshipDirection, isOrdered);
 
             CompileContext context = compiler.context();
 
@@ -368,7 +371,7 @@ public class EntityGraphMapper implements EntityMapper {
                         final ClassInfo relatedObjectClassInfo = metaData.classInfo(relatedObject);
                         if (!relatedObjectClassInfo.neo4jName().equals(directedRelationship.type())) {
                             directedRelationship = new DirectedRelationship(relatedObjectClassInfo.neo4jName(),
-                                directedRelationship.direction());
+                                directedRelationship.direction(), isOrdered);
                             relationshipType = directedRelationship.type();
                         }
                     }
@@ -505,7 +508,7 @@ public class EntityGraphMapper implements EntityMapper {
 
             if (relId < 0
                 || relationshipEndsChanged) { //if the RE itself is new, or it exists but has one of it's end nodes changed
-                relationshipBuilder = cypherBuilder.newRelationship(directedRelationship.type());
+                relationshipBuilder = cypherBuilder.newRelationship(directedRelationship.type(), false, directedRelationship.ordered());
                 if (relationshipEndsChanged) {
                     EntityUtils.setIdentity(entity, null, metaData);
                 }
@@ -513,7 +516,7 @@ public class EntityGraphMapper implements EntityMapper {
                 relationshipBuilder = cypherBuilder.existingRelationship(relId, directedRelationship.type());
             }
         } else {
-            relationshipBuilder = cypherBuilder.newRelationship(directedRelationship.type(), mapBothDirections);
+            relationshipBuilder = cypherBuilder.newRelationship(directedRelationship.type(), mapBothDirections, directedRelationship.ordered());
         }
 
         relationshipBuilder.direction(directedRelationship.direction());

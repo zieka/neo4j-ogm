@@ -289,7 +289,7 @@ public class EntityAccessManager {
         }
 
         DirectedRelationshipForType directedRelationship = new DirectedRelationshipForType(relationshipType,
-            relationshipDirection, objectType);
+            relationshipDirection, objectType, false);
         if (relationalWriterCache.get(classInfo).containsKey(directedRelationship)) {
             return relationalWriterCache.get(classInfo).get(directedRelationship);
         }
@@ -374,7 +374,8 @@ public class EntityAccessManager {
             relationalReaderCache.put(classInfo, new HashMap<>());
         }
 
-        DirectedRelationship directedRelationship = new DirectedRelationship(relationshipType, relationshipDirection);
+        DirectedRelationship directedRelationship = new DirectedRelationship(relationshipType, relationshipDirection,
+            false);
         if (relationalReaderCache.get(classInfo).containsKey(directedRelationship)) {
             return relationalReaderCache.get(classInfo).get(directedRelationship);
         }
@@ -427,7 +428,7 @@ public class EntityAccessManager {
             iterableWriterCache.put(classInfo, new HashMap<>());
         }
         DirectedRelationshipForType directedRelationshipForType = new DirectedRelationshipForType(relationshipType,
-            relationshipDirection, parameterType);
+            relationshipDirection, parameterType, false);
         if (iterableWriterCache.get(classInfo).containsKey(directedRelationshipForType)) {
             return iterableWriterCache.get(classInfo).get(directedRelationshipForType);
         }
@@ -509,7 +510,7 @@ public class EntityAccessManager {
         if (fieldInfo.isParameterisedTypeOf(parameterType)) {
             //Cache the writer for the superclass used in the type param
             directedRelationshipForType = new DirectedRelationshipForType(relationshipType, relationshipDirection,
-                ClassUtils.getType(fieldInfo.getTypeDescriptor()));
+                ClassUtils.getType(fieldInfo.getTypeDescriptor()), false);
         }
         iterableWriterCache.get(classInfo).put(directedRelationshipForType, fieldAccessor);
     }

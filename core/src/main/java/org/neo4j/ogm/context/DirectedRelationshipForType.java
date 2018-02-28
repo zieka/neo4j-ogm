@@ -22,8 +22,8 @@ public class DirectedRelationshipForType extends DirectedRelationship {
 
     Class type;
 
-    public DirectedRelationshipForType(String relationshipType, String relationshipDirection, Class type) {
-        super(relationshipType, relationshipDirection);
+    public DirectedRelationshipForType(String relationshipType, String relationshipDirection, Class type, boolean isOrdered) {
+        super(relationshipType, relationshipDirection, isOrdered);
         this.type = type;
     }
 

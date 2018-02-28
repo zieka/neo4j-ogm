@@ -20,12 +20,14 @@ package org.neo4j.ogm.context;
  */
 public class DirectedRelationship {
 
-    private String relationshipType;
-    private String relationshipDirection;
+    private final String relationshipType;
+    private final String relationshipDirection;
+    private final boolean isOrdered;
 
-    public DirectedRelationship(String relationshipType, String relationshipDirection) {
+    public DirectedRelationship(String relationshipType, String relationshipDirection, boolean isOrdered) {
         this.relationshipType = relationshipType;
         this.relationshipDirection = relationshipDirection;
+        this.isOrdered = isOrdered;
     }
 
     public String type() {
@@ -34,6 +36,10 @@ public class DirectedRelationship {
 
     public String direction() {
         return relationshipDirection;
+    }
+
+    public boolean ordered() {
+        return isOrdered;
     }
 
     @Override

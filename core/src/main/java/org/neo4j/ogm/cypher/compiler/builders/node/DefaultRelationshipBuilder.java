@@ -31,19 +31,22 @@ public class DefaultRelationshipBuilder implements RelationshipBuilder {
     private boolean singleton = true; // will be false if the relationship can be mapped multiple times between two instances
     private boolean bidirectional = false;
     private boolean relationshipEntity = false;
+    private boolean ordered = false;
 
-    public DefaultRelationshipBuilder(String type, boolean bidirectional) {
+    public DefaultRelationshipBuilder(String type, boolean bidirectional, boolean ordered) {
+        this.ordered = ordered;
         relationship.setType(type);
         relationship.setId(EntityUtils.nextRef());
         this.bidirectional = bidirectional;
     }
 
-    public DefaultRelationshipBuilder(String type, Long relationshipId) {
+    public DefaultRelationshipBuilder(String type, Long relationshipId, boolean ordered) {
         if (relationshipId == null) {
             relationshipId = EntityUtils.nextRef();
         }
         relationship.setId(relationshipId);
         relationship.setType(type);
+        this.ordered = ordered;
     }
 
     @Override
@@ -141,5 +144,10 @@ public class DefaultRelationshipBuilder implements RelationshipBuilder {
     public RelationshipBuilder setVersionProperty(String name, Long version) {
         relationship.setVersion(new PropertyModel<>(name, version));
         return this;
+    }
+
+    @Override
+    public boolean isOrdered() {
+        return ordered;
     }
 }

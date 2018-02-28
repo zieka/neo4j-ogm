@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.neo4j.ogm.annotation.Ordered;
 import org.neo4j.ogm.cypher.compiler.builders.node.DefaultNodeBuilder;
 import org.neo4j.ogm.cypher.compiler.builders.node.DefaultRelationshipBuilder;
 import org.neo4j.ogm.cypher.compiler.builders.statement.DeletedRelationshipEntityStatementBuilder;
@@ -38,6 +39,7 @@ import org.neo4j.ogm.model.Edge;
 import org.neo4j.ogm.model.Node;
 import org.neo4j.ogm.request.Statement;
 import org.neo4j.ogm.request.StatementFactory;
+import org.neo4j.ogm.response.model.PropertyModel;
 import org.neo4j.ogm.response.model.RelationshipModel;
 
 /**
@@ -75,16 +77,16 @@ public class MultiStatementCypherCompiler implements Compiler {
     }
 
     @Override
-    public RelationshipBuilder newRelationship(String type, boolean bidirectional) {
-        RelationshipBuilder relationshipBuilder = new DefaultRelationshipBuilder(type, bidirectional);
+    public RelationshipBuilder newRelationship(String type, boolean bidirectional, boolean ordered) {
+        RelationshipBuilder relationshipBuilder = new DefaultRelationshipBuilder(type, bidirectional, ordered);
         newRelationshipBuilders.add(relationshipBuilder);
         return relationshipBuilder;
     }
 
-    @Override
-    public RelationshipBuilder newRelationship(String type) {
-        return newRelationship(type, false);
-    }
+//    @Override
+//    public RelationshipBuilder newRelationship(String type, boolean bidirectional, boolean ordered) {
+//        return newRelationship(type, false);
+//    }
 
     @Override
     public NodeBuilder existingNode(Long existingNodeId) {
@@ -95,14 +97,14 @@ public class MultiStatementCypherCompiler implements Compiler {
 
     @Override
     public RelationshipBuilder existingRelationship(Long existingRelationshipId, String type) {
-        RelationshipBuilder relationshipBuilder = new DefaultRelationshipBuilder(type, existingRelationshipId);
+        RelationshipBuilder relationshipBuilder = new DefaultRelationshipBuilder(type, existingRelationshipId, false);
         existingRelationshipBuilders.add(relationshipBuilder);
         return relationshipBuilder;
     }
 
     @Override
     public RelationshipBuilder unrelate(Long startNode, String relationshipType, Long endNode, Long relId) {
-        RelationshipBuilder relationshipBuilder = new DefaultRelationshipBuilder(relationshipType, relId);
+        RelationshipBuilder relationshipBuilder = new DefaultRelationshipBuilder(relationshipType, relId, false);
         relationshipBuilder.relate(startNode, endNode);
         if (!unmap(relationshipBuilder)) {
             if (relId != null) {
@@ -137,6 +139,7 @@ public class MultiStatementCypherCompiler implements Compiler {
         //Group relationships by type and non-null properties
         //key: relationship type, value: Map where key=Set<Property strings>, value: Set of edges with those properties
         Map<String, Map<String, Set<Edge>>> relsByTypeAndProps = new HashMap<>();
+        int i = 0;
         for (RelationshipBuilder relationshipBuilder : newRelationshipBuilders) {
             if (relationshipBuilder.edge().getStartNode() == null || relationshipBuilder.edge().getEndNode() == null) {
                 continue; //TODO this is a carry forward from the old emitters. We want to prevent this rel builder getting created or remove it
@@ -151,6 +154,9 @@ public class MultiStatementCypherCompiler implements Compiler {
             Set<Edge> rels = relsByProps.computeIfAbsent(primaryId, (s) -> new HashSet<>());
             edge.setStartNode(context.getId(edge.getStartNode()));
             edge.setEndNode(context.getId(edge.getEndNode()));
+            if (relationshipBuilder.isOrdered()) {
+                edge.getPropertyList().add(PropertyModel.with(Ordered.ORDERED_PROPERTY, i++));
+            }
             rels.add(edge);
         }
 

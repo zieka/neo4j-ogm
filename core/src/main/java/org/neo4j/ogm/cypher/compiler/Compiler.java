@@ -40,7 +40,7 @@ public interface Compiler {
      * @param bidirectional true if the relationship must be created in both incoming and outgoing directions, false otherwise
      * @return A {@link RelationshipBuilder} representing a new relationship
      */
-    RelationshipBuilder newRelationship(String type, boolean bidirectional);
+//    RelationshipBuilder newRelationship(String type, boolean bidirectional);
 
     /**
      * Returns a {@link RelationshipBuilder} that represents a new relationship to be created in the database
@@ -48,7 +48,7 @@ public interface Compiler {
      * @param type the relationship type
      * @return A {@link RelationshipBuilder} representing a new relationship
      */
-    RelationshipBuilder newRelationship(String type);
+    RelationshipBuilder newRelationship(String type, boolean bidirectional, boolean ordered);
 
     /**
      * Returns a {@link NodeBuilder} that represents a node that already exists in the database and matches the given ID.
