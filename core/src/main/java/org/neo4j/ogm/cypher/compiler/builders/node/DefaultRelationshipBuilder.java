@@ -32,15 +32,18 @@ public class DefaultRelationshipBuilder implements RelationshipBuilder {
     private boolean bidirectional = false;
     private boolean relationshipEntity = false;
     private boolean ordered = false;
+    private final int orderId;
 
-    public DefaultRelationshipBuilder(String type, boolean bidirectional, boolean ordered) {
+    public DefaultRelationshipBuilder(String type, boolean bidirectional, boolean ordered, int orderId) {
         this.ordered = ordered;
+        this.orderId = orderId;
         relationship.setType(type);
         relationship.setId(EntityUtils.nextRef());
         this.bidirectional = bidirectional;
     }
 
-    public DefaultRelationshipBuilder(String type, Long relationshipId, boolean ordered) {
+    public DefaultRelationshipBuilder(String type, Long relationshipId, boolean ordered, int orderId) {
+        this.orderId = orderId;
         if (relationshipId == null) {
             relationshipId = EntityUtils.nextRef();
         }
@@ -149,5 +152,10 @@ public class DefaultRelationshipBuilder implements RelationshipBuilder {
     @Override
     public boolean isOrdered() {
         return ordered;
+    }
+
+    @Override
+    public int getOrderId() {
+        return orderId;
     }
 }

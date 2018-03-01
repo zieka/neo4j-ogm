@@ -50,6 +50,7 @@ import org.neo4j.ogm.response.model.RelationshipModel;
  */
 public class MultiStatementCypherCompiler implements Compiler {
 
+    public static final int DELETED_ORDER_ID = -1;
     private final CompileContext context;
     private final List<NodeBuilder> newNodeBuilders;
     private final List<RelationshipBuilder> newRelationshipBuilders;
@@ -58,6 +59,8 @@ public class MultiStatementCypherCompiler implements Compiler {
     private final List<RelationshipBuilder> deletedRelationshipBuilders;
     private final List<RelationshipBuilder> deletedRelationshipEntityBuilders;
     private StatementFactory statementFactory;
+
+    private int orderId;
 
     public MultiStatementCypherCompiler() {
         this.context = new CypherContext(this);
@@ -78,15 +81,10 @@ public class MultiStatementCypherCompiler implements Compiler {
 
     @Override
     public RelationshipBuilder newRelationship(String type, boolean bidirectional, boolean ordered) {
-        RelationshipBuilder relationshipBuilder = new DefaultRelationshipBuilder(type, bidirectional, ordered);
+        RelationshipBuilder relationshipBuilder = new DefaultRelationshipBuilder(type, bidirectional, ordered, orderId++);
         newRelationshipBuilders.add(relationshipBuilder);
         return relationshipBuilder;
     }
-
-//    @Override
-//    public RelationshipBuilder newRelationship(String type, boolean bidirectional, boolean ordered) {
-//        return newRelationship(type, false);
-//    }
 
     @Override
     public NodeBuilder existingNode(Long existingNodeId) {
@@ -96,15 +94,16 @@ public class MultiStatementCypherCompiler implements Compiler {
     }
 
     @Override
-    public RelationshipBuilder existingRelationship(Long existingRelationshipId, String type) {
-        RelationshipBuilder relationshipBuilder = new DefaultRelationshipBuilder(type, existingRelationshipId, false);
+    public RelationshipBuilder existingRelationship(Long existingRelationshipId, String type, boolean ordered) {
+        RelationshipBuilder relationshipBuilder = new DefaultRelationshipBuilder(type, existingRelationshipId, ordered, orderId++);
         existingRelationshipBuilders.add(relationshipBuilder);
         return relationshipBuilder;
     }
 
     @Override
     public RelationshipBuilder unrelate(Long startNode, String relationshipType, Long endNode, Long relId) {
-        RelationshipBuilder relationshipBuilder = new DefaultRelationshipBuilder(relationshipType, relId, false);
+        RelationshipBuilder relationshipBuilder = new DefaultRelationshipBuilder(relationshipType, relId, false,
+            DELETED_ORDER_ID);
         relationshipBuilder.relate(startNode, endNode);
         if (!unmap(relationshipBuilder)) {
             if (relId != null) {
@@ -139,7 +138,7 @@ public class MultiStatementCypherCompiler implements Compiler {
         //Group relationships by type and non-null properties
         //key: relationship type, value: Map where key=Set<Property strings>, value: Set of edges with those properties
         Map<String, Map<String, Set<Edge>>> relsByTypeAndProps = new HashMap<>();
-        int i = 0;
+
         for (RelationshipBuilder relationshipBuilder : newRelationshipBuilders) {
             if (relationshipBuilder.edge().getStartNode() == null || relationshipBuilder.edge().getEndNode() == null) {
                 continue; //TODO this is a carry forward from the old emitters. We want to prevent this rel builder getting created or remove it
@@ -155,7 +154,7 @@ public class MultiStatementCypherCompiler implements Compiler {
             edge.setStartNode(context.getId(edge.getStartNode()));
             edge.setEndNode(context.getId(edge.getEndNode()));
             if (relationshipBuilder.isOrdered()) {
-                edge.getPropertyList().add(PropertyModel.with(Ordered.ORDERED_PROPERTY, i++));
+                edge.getPropertyList().add(PropertyModel.with(Ordered.ORDERED_PROPERTY, relationshipBuilder.getOrderId()));
             }
             rels.add(edge);
         }
@@ -194,9 +193,14 @@ public class MultiStatementCypherCompiler implements Compiler {
         assertStatementFactoryExists();
         Set<Edge> relationships = new HashSet<>(existingRelationshipBuilders.size());
         List<Statement> statements = new ArrayList<>(existingRelationshipBuilders.size());
+
         if (existingRelationshipBuilders.size() > 0) {
             for (RelationshipBuilder relBuilder : existingRelationshipBuilders) {
-                relationships.add(relBuilder.edge());
+                Edge edge = relBuilder.edge();
+                if (relBuilder.isOrdered()) {
+                    edge.getPropertyList().add(PropertyModel.with(Ordered.ORDERED_PROPERTY, relBuilder.getOrderId()));
+                }
+                relationships.add(edge);
             }
             ExistingRelationshipStatementBuilder existingRelationshipBuilder = new ExistingRelationshipStatementBuilder(
                 relationships, statementFactory);

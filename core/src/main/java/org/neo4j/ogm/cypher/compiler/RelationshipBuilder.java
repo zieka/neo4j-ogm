@@ -53,4 +53,6 @@ public interface RelationshipBuilder extends PropertyContainerBuilder<Relationsh
     void setPrimaryIdName(String primaryIdName);
 
     boolean isOrdered();
+
+    int getOrderId();
 }
