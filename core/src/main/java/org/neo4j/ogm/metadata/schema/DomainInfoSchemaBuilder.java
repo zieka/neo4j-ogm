@@ -35,12 +35,10 @@ public class DomainInfoSchemaBuilder {
 
     private static final Logger logger = LoggerFactory.getLogger(DomainInfoSchemaBuilder.class);
 
-    private DomainInfo domainInfo;
     private Map<String, ClassInfo> classInfoMap;
     private SchemaImpl schema;
 
     public DomainInfoSchemaBuilder(DomainInfo domainInfo) {
-        this.domainInfo = domainInfo;
         this.classInfoMap = domainInfo.getClassInfoMap();
         this.schema = new SchemaImpl();
     }

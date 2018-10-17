@@ -114,16 +114,16 @@ public class ClassInfo {
         addSubclass(subclass);
     }
 
-    public ClassInfo(Class<?> cls) {
-        this.cls = cls;
-        final int modifiers = cls.getModifiers();
-        this.isInterface = Modifier.isInterface(modifiers);
-        this.isAbstract = Modifier.isAbstract(modifiers);
-        this.isEnum = cls.isEnum();
-        this.className = cls.getName();
+    public ClassInfo(io.github.classgraph.ClassInfo scanClassInfo) {
+        this.cls = scanClassInfo.loadClass();
 
-        if (cls.getSuperclass() != null) {
-            this.directSuperclassName = cls.getSuperclass().getName();
+        this.isInterface = scanClassInfo.isInterface();
+        this.isAbstract = scanClassInfo.isAbstract();
+        this.isEnum = scanClassInfo.isEnum();
+        this.className = scanClassInfo.getName();
+
+        if (scanClassInfo.getSuperclass() != null) {
+            this.directSuperclassName = scanClassInfo.getSuperclass().getName();
         }
         this.interfacesInfo = new InterfacesInfo(cls);
         this.fieldsInfo = new FieldsInfo(this, cls);

@@ -16,11 +16,11 @@ package org.neo4j.ogm.metadata;
 import static java.util.Comparator.*;
 
 import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.neo4j.ogm.annotation.typeconversion.Convert;
 import org.neo4j.ogm.exception.core.MappingException;
@@ -56,29 +56,22 @@ public class DomainInfo {
             .whitelistPackages(packages)
             .scan();
 
-        List<String> allClasses = scanResult.getAllClasses().stream()
-            .map(io.github.classgraph.ClassInfo::getName)
-            .collect(Collectors.toList());
+        ClassInfoList allClasses = scanResult.getAllClasses();
 
         DomainInfo domainInfo = new DomainInfo();
 
-        for (String className : allClasses) {
-            Class<?> cls = null;
-            try {
-                cls = Class.forName(className, false, Thread.currentThread().getContextClassLoader());
-            } catch (ClassNotFoundException e) {
-                LOGGER.warn("Could not load class {}", className);
-                continue;
-            }
+        for (io.github.classgraph.ClassInfo scanClassInfo : allClasses) {
 
-            ClassInfo classInfo = new ClassInfo(cls);
+            String className = scanClassInfo.getName();
+
+            ClassInfo classInfo = new ClassInfo(scanClassInfo);
 
             String superclassName = classInfo.superclassName();
 
             LOGGER.debug("Processing: {} -> {}", className, superclassName);
 
             if (className != null) {
-                if (cls.isAnnotation() || cls.isAnonymousClass() || cls.equals(Object.class)) {
+                if (scanClassInfo.isAnnotation() || scanClassInfo.isAnonymousInnerClass() || scanClassInfo.loadClass().equals(Object.class)) {
                     continue;
                 }
 
