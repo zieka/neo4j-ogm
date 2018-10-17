@@ -181,10 +181,9 @@
             </dependency>
 
             <dependency>
-                <groupId>io.github.lukehutch</groupId>
-                <artifactId>fast-classpath-scanner</artifactId>
-                <version>${fast.classpath.scanner}</version>
-                <scope>compile</scope>
+                <groupId>io.github.classgraph</groupId>
+                <artifactId>classgraph</artifactId>
+                <version>4.4.1</version>
             </dependency>
 
         </dependencies>

@@ -15,11 +15,12 @@ package org.neo4j.ogm.metadata;
 
 import static java.util.Comparator.*;
 
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
-import io.github.lukehutch.fastclasspathscanner.scanner.ScanResult;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ScanResult;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.ogm.annotation.typeconversion.Convert;
 import org.neo4j.ogm.exception.core.MappingException;
@@ -51,11 +52,13 @@ public class DomainInfo {
 
     public static DomainInfo create(String... packages) {
 
-        ScanResult scanResult = new FastClasspathScanner(packages)
-            .strictWhitelist()
+        ScanResult scanResult = new ClassGraph()
+            .whitelistPackages(packages)
             .scan();
 
-        List<String> allClasses = scanResult.getNamesOfAllClasses();
+        List<String> allClasses = scanResult.getAllClasses().stream()
+            .map(io.github.classgraph.ClassInfo::getName)
+            .collect(Collectors.toList());
 
         DomainInfo domainInfo = new DomainInfo();
 
@@ -108,6 +111,44 @@ public class DomainInfo {
         domainInfo.finish();
 
         return domainInfo;
+    }
+
+    /**
+     * Selects the specialized attribute converter for the given field info, depending wether the field info
+     * describes an array, iterable or scalar value.
+     *
+     * @param source must not be {@literal null}.
+     * @param from   The attribute converters to select from, must not be {@literal null}.
+     * @return
+     */
+    private static Optional<AttributeConverter<?, ?>> selectAttributeConverterFor(FieldInfo source,
+        AttributeConverters from) {
+
+        FieldInfo fieldInfo = Objects.requireNonNull(source, "Need a field info");
+        AttributeConverters attributeConverters = Objects
+            .requireNonNull(from, "Need the set of attribute converters for the given field info.");
+
+        AttributeConverter selectedConverter;
+        if (fieldInfo.isArray()) {
+            selectedConverter = attributeConverters.forArray;
+        } else if (fieldInfo.isIterable()) {
+            selectedConverter = attributeConverters.forIterable.apply(fieldInfo.getCollectionClassname());
+        } else {
+            selectedConverter = attributeConverters.forScalar;
+        }
+
+        return Optional.ofNullable(selectedConverter);
+    }
+
+    private static void setEnumFieldConverter(FieldInfo fieldInfo, Class enumClass) {
+        if (fieldInfo.isArray()) {
+            fieldInfo.setPropertyConverter(ConvertibleTypes.getEnumArrayConverter(enumClass));
+        } else if (fieldInfo.isIterable()) {
+            fieldInfo.setPropertyConverter(
+                ConvertibleTypes.getEnumCollectionConverter(enumClass, fieldInfo.getCollectionClassname()));
+        } else {
+            fieldInfo.setPropertyConverter(ConvertibleTypes.getEnumConverter(enumClass));
+        }
     }
 
     private void buildAnnotationNameToClassInfoMap() {
@@ -392,43 +433,5 @@ public class DomainInfo {
 
     public List<ClassInfo> getClassInfos(String interfaceName) {
         return interfaceNameToClassInfo.get(interfaceName);
-    }
-
-    /**
-     * Selects the specialized attribute converter for the given field info, depending wether the field info
-     * describes an array, iterable or scalar value.
-     *
-     * @param source must not be {@literal null}.
-     * @param from   The attribute converters to select from, must not be {@literal null}.
-     * @return
-     */
-    private static Optional<AttributeConverter<?, ?>> selectAttributeConverterFor(FieldInfo source,
-        AttributeConverters from) {
-
-        FieldInfo fieldInfo = Objects.requireNonNull(source, "Need a field info");
-        AttributeConverters attributeConverters = Objects
-            .requireNonNull(from, "Need the set of attribute converters for the given field info.");
-
-        AttributeConverter selectedConverter;
-        if (fieldInfo.isArray()) {
-            selectedConverter = attributeConverters.forArray;
-        } else if (fieldInfo.isIterable()) {
-            selectedConverter = attributeConverters.forIterable.apply(fieldInfo.getCollectionClassname());
-        } else {
-            selectedConverter = attributeConverters.forScalar;
-        }
-
-        return Optional.ofNullable(selectedConverter);
-    }
-
-    private static void setEnumFieldConverter(FieldInfo fieldInfo, Class enumClass) {
-        if (fieldInfo.isArray()) {
-            fieldInfo.setPropertyConverter(ConvertibleTypes.getEnumArrayConverter(enumClass));
-        } else if (fieldInfo.isIterable()) {
-            fieldInfo.setPropertyConverter(
-                ConvertibleTypes.getEnumCollectionConverter(enumClass, fieldInfo.getCollectionClassname()));
-        } else {
-            fieldInfo.setPropertyConverter(ConvertibleTypes.getEnumConverter(enumClass));
-        }
     }
 }

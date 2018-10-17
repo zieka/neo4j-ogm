@@ -160,7 +160,7 @@ public class DomainInfoSchemaBuilderTest {
 
     @Test
     public void givenRelationshipIsArray_thenMapRelationshipType() throws Exception {
-        DomainInfo domainInfo = DomainInfo.create(Vertex.class.getName());
+        DomainInfo domainInfo = DomainInfo.create(Vertex.class.getPackage().getName());
         schema = new DomainInfoSchemaBuilder(domainInfo).build();
 
         Node node = schema.findNode("Vertex");
