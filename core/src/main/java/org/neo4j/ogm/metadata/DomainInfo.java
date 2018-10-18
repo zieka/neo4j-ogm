@@ -52,6 +52,58 @@ public class DomainInfo {
 
     public static DomainInfo create(String... packagesOrClasses) {
 
+        ClassInfoList allClasses = findClasses(packagesOrClasses);
+
+        DomainInfo domainInfo = new DomainInfo();
+
+        for (io.github.classgraph.ClassInfo scanClassInfo : allClasses) {
+            processClass(domainInfo, scanClassInfo);
+        }
+
+        domainInfo.finish();
+
+        return domainInfo;
+    }
+
+    private static void processClass(DomainInfo domainInfo, io.github.classgraph.ClassInfo scanClassInfo) {
+
+        String className = scanClassInfo.getName();
+        ClassInfo classInfo = new ClassInfo(scanClassInfo);
+        String superclassName = classInfo.superclassName();
+
+        LOGGER.debug("Processing: {} -> {}", className, superclassName);
+
+        if (scanClassInfo.isAnnotation() || scanClassInfo.isAnonymousInnerClass() || scanClassInfo.loadClass()
+            .equals(Object.class)) {
+            return;
+        }
+
+        ClassInfo thisClassInfo = domainInfo.classNameToClassInfo.computeIfAbsent(className, k -> classInfo);
+
+        if (!thisClassInfo.hydrated()) {
+
+            thisClassInfo.hydrate(classInfo);
+
+            ClassInfo superclassInfo = domainInfo.classNameToClassInfo.get(superclassName);
+            if (superclassInfo == null) {
+
+                if (superclassName != null && !superclassName.equals("java.lang.Object") && !superclassName
+                    .equals("java.lang.Enum")) {
+                    domainInfo.classNameToClassInfo
+                        .put(superclassName, new ClassInfo(superclassName, thisClassInfo));
+                }
+            } else {
+                superclassInfo.addSubclass(thisClassInfo);
+            }
+        }
+
+        if (thisClassInfo.isEnum()) {
+            LOGGER.debug("Registering enum class: {}", thisClassInfo.name());
+            domainInfo.enumTypes.add(thisClassInfo.getUnderlyingClass());
+        }
+    }
+
+    private static ClassInfoList findClasses(String[] packagesOrClasses) {
         List<String> packages = new ArrayList<>(packagesOrClasses.length);
         Set<String> classes = new HashSet<>(packagesOrClasses.length);
 
@@ -64,61 +116,13 @@ public class DomainInfo {
             }
         }
 
-
         ScanResult scanResult = new ClassGraph()
             .enableAllInfo()
-            .whitelistPackages(packages.toArray(new String[]{}))
-            .whitelistClasses(classes.toArray(new String[]{}))
+            .whitelistPackages(packages.toArray(new String[] {}))
+            .whitelistClasses(classes.toArray(new String[] {}))
             .scan();
 
-        ClassInfoList allClasses = scanResult.getAllClasses();
-
-        DomainInfo domainInfo = new DomainInfo();
-
-        for (io.github.classgraph.ClassInfo scanClassInfo : allClasses) {
-
-            String className = scanClassInfo.getName();
-
-            ClassInfo classInfo = new ClassInfo(scanClassInfo);
-
-            String superclassName = classInfo.superclassName();
-
-            LOGGER.debug("Processing: {} -> {}", className, superclassName);
-
-            if (className != null) {
-                if (scanClassInfo.isAnnotation() || scanClassInfo.isAnonymousInnerClass() || scanClassInfo.loadClass().equals(Object.class)) {
-                    continue;
-                }
-
-                ClassInfo thisClassInfo = domainInfo.classNameToClassInfo.computeIfAbsent(className, k -> classInfo);
-
-                if (!thisClassInfo.hydrated()) {
-
-                    thisClassInfo.hydrate(classInfo);
-
-                    ClassInfo superclassInfo = domainInfo.classNameToClassInfo.get(superclassName);
-                    if (superclassInfo == null) {
-
-                        if (superclassName != null && !superclassName.equals("java.lang.Object") && !superclassName
-                            .equals("java.lang.Enum")) {
-                            domainInfo.classNameToClassInfo
-                                .put(superclassName, new ClassInfo(superclassName, thisClassInfo));
-                        }
-                    } else {
-                        superclassInfo.addSubclass(thisClassInfo);
-                    }
-                }
-
-                if (thisClassInfo.isEnum()) {
-                    LOGGER.debug("Registering enum class: {}", thisClassInfo.name());
-                    domainInfo.enumTypes.add(thisClassInfo.getUnderlyingClass());
-                }
-            }
-        }
-
-        domainInfo.finish();
-
-        return domainInfo;
+        return scanResult.getAllClasses();
     }
 
     /**
@@ -205,7 +209,7 @@ public class DomainInfo {
         for (ClassInfo classInfo : classNameToClassInfo.values()) {
 
             if (classInfo.name() == null || classInfo.name().equals("java.lang.Object"))
-            continue;
+                continue;
 
             LOGGER.debug("Post-processing: {}", classInfo.name());
 
