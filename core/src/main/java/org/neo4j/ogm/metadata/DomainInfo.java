@@ -45,8 +45,8 @@ public class DomainInfo {
     private static final Logger LOGGER = LoggerFactory.getLogger(DomainInfo.class);
 
     private final Map<String, ClassInfo> classNameToClassInfo = new HashMap<>();
-    private final Map<String, ArrayList<ClassInfo>> annotationNameToClassInfo = new HashMap<>();
-    private final Map<String, ArrayList<ClassInfo>> interfaceNameToClassInfo = new HashMap<>();
+    private final Map<String, List<ClassInfo>> annotationNameToClassInfo = new HashMap<>();
+    private final Map<String, List<ClassInfo>> interfaceNameToClassInfo = new HashMap<>();
     private final Set<Class> enumTypes = new HashSet<>();
     private final ConversionCallbackRegistry conversionCallbackRegistry = new ConversionCallbackRegistry();
 
@@ -164,7 +164,7 @@ public class DomainInfo {
         LOGGER.info("Building annotation class map");
         for (ClassInfo classInfo : classNameToClassInfo.values()) {
             for (AnnotationInfo annotation : classInfo.annotations()) {
-                ArrayList<ClassInfo> classInfoList = annotationNameToClassInfo.get(annotation.getName());
+                List<ClassInfo> classInfoList = annotationNameToClassInfo.get(annotation.getName());
                 if (classInfoList == null) {
                     annotationNameToClassInfo.put(annotation.getName(), classInfoList = new ArrayList<>());
                 }
@@ -179,7 +179,7 @@ public class DomainInfo {
             LOGGER.debug(" - {} implements {} interfaces", classInfo.simpleName(),
                 classInfo.interfacesInfo().size());
             for (io.github.classgraph.ClassInfo iface : classInfo.interfacesInfo()) {
-                ArrayList<ClassInfo> classInfoList = interfaceNameToClassInfo.get(iface.getName());
+                List<ClassInfo> classInfoList = interfaceNameToClassInfo.get(iface.getName());
                 if (classInfoList == null) {
                     interfaceNameToClassInfo.put(iface.getName(), classInfoList = new ArrayList<>());
                 }
@@ -227,8 +227,8 @@ public class DomainInfo {
         LOGGER.debug("Checking for @Transient classes....");
 
         // find transient interfaces
-        Collection<ArrayList<ClassInfo>> interfaceInfos = interfaceNameToClassInfo.values();
-        for (ArrayList<ClassInfo> classInfos : interfaceInfos) {
+        Collection<List<ClassInfo>> interfaceInfos = interfaceNameToClassInfo.values();
+        for (List<ClassInfo> classInfos : interfaceInfos) {
             for (ClassInfo classInfo : classInfos) {
                 if (classInfo.isTransient()) {
                     LOGGER.debug("Registering @Transient baseclass: {}", classInfo.name());
