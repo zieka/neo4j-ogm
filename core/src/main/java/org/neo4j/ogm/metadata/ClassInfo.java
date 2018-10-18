@@ -13,9 +13,11 @@
 
 package org.neo4j.ogm.metadata;
 
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfoList;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -33,7 +35,6 @@ import org.neo4j.ogm.annotation.*;
 import org.neo4j.ogm.exception.core.InvalidPropertyFieldException;
 import org.neo4j.ogm.exception.core.MappingException;
 import org.neo4j.ogm.exception.core.MetadataException;
-import org.neo4j.ogm.exception.core.OgmException;
 import org.neo4j.ogm.id.IdStrategy;
 import org.neo4j.ogm.id.InternalIdStrategy;
 import org.neo4j.ogm.id.UuidStrategy;
@@ -67,6 +68,7 @@ public class ClassInfo {
     private final List<ClassInfo> directSubclasses = new ArrayList<>();
     private final List<ClassInfo> directInterfaces = new ArrayList<>();
     private final List<ClassInfo> directImplementingClasses = new ArrayList<>();
+    private ClassInfoList interfaces;
     private String className;
     private String directSuperclassName;
     private String neo4jName;
@@ -77,7 +79,7 @@ public class ClassInfo {
     private FieldsInfo fieldsInfo;
     private MethodsInfo methodsInfo;
     private AnnotationsInfo annotationsInfo;
-    private InterfacesInfo interfacesInfo;
+
     private ClassInfo directSuperclass;
     private Map<Class, List<FieldInfo>> iterableFieldsForType = new HashMap<>();
     private Map<FieldInfo, Field> fieldInfoFields = new ConcurrentHashMap<>();
@@ -110,7 +112,7 @@ public class ClassInfo {
         this.fieldsInfo = new FieldsInfo();
         this.methodsInfo = new MethodsInfo();
         this.annotationsInfo = new AnnotationsInfo();
-        this.interfacesInfo = new InterfacesInfo();
+        this.interfaces = new ClassGraph().whitelistClasses(name).scan().getAllInterfaces();
         addSubclass(subclass);
     }
 
@@ -125,7 +127,7 @@ public class ClassInfo {
         if (scanClassInfo.getSuperclass() != null) {
             this.directSuperclassName = scanClassInfo.getSuperclass().getName();
         }
-        this.interfacesInfo = new InterfacesInfo(cls);
+        interfaces = scanClassInfo.getInterfaces();
         this.fieldsInfo = new FieldsInfo(this, cls);
         this.methodsInfo = new MethodsInfo(cls);
         this.annotationsInfo = new AnnotationsInfo(cls);
@@ -160,8 +162,7 @@ public class ClassInfo {
             this.isEnum = classInfoDetails.isEnum;
             this.directSuperclassName = classInfoDetails.directSuperclassName;
             this.cls = classInfoDetails.cls;
-
-            this.interfacesInfo.append(classInfoDetails.interfacesInfo());
+            this.interfaces = classInfoDetails.interfaces;
 
             this.annotationsInfo.append(classInfoDetails.annotationsInfo());
             this.fieldsInfo.append(classInfoDetails.fieldsInfo());
@@ -170,7 +171,7 @@ public class ClassInfo {
     }
 
     void extend(ClassInfo classInfo) {
-        this.interfacesInfo.append(classInfo.interfacesInfo());
+        this.interfaces = classInfo.interfaces;
         this.fieldsInfo.append(classInfo.fieldsInfo());
         this.methodsInfo.append(classInfo.methodsInfo());
     }
@@ -222,7 +223,7 @@ public class ClassInfo {
      * any, never <code>null</code>
      */
     public Collection<String> staticLabels() {
-        return collectLabels(new ArrayList<>());
+        return collectLabels();
     }
 
     public String neo4jName() {
@@ -244,15 +245,16 @@ public class ClassInfo {
         return neo4jName;
     }
 
-    private Collection<String> collectLabels(Collection<String> labelNames) {
+    private Collection<String> collectLabels() {
+        List<String> labelNames = new ArrayList<>();
         if (!isAbstract || annotationsInfo.get(NodeEntity.class) != null) {
             labelNames.add(neo4jName());
         }
         if (directSuperclass != null && !"java.lang.Object".equals(directSuperclass.className)) {
-            directSuperclass.collectLabels(labelNames);
+            labelNames.addAll(directSuperclass.collectLabels());
         }
         for (ClassInfo interfaceInfo : directInterfaces()) {
-            interfaceInfo.collectLabels(labelNames);
+            labelNames.addAll(interfaceInfo.collectLabels());
         }
         return labelNames;
     }
@@ -269,8 +271,8 @@ public class ClassInfo {
         return directInterfaces;
     }
 
-    InterfacesInfo interfacesInfo() {
-        return interfacesInfo;
+    ClassInfoList interfacesInfo() {
+        return interfaces;
     }
 
     public Collection<AnnotationInfo> annotations() {

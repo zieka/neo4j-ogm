@@ -54,6 +54,6 @@ public class DomainInfoTest {
 
         ClassInfo classInfo = domainInfo.getClassSimpleName("SilverMembership");
         assertThat(classInfo).isNotNull();
-        assertThat(classInfo.interfacesInfo().list()).hasSize(1);
+        assertThat(classInfo.interfacesInfo()).hasSize(1);
     }
 }

@@ -13,6 +13,8 @@
 
 package org.neo4j.ogm.metadata;
 
+import io.github.classgraph.ClassInfoList;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -228,7 +230,7 @@ public class FieldInfo {
     }
 
     public boolean isIterable() {
-        return Iterable.class.isAssignableFrom(fieldType);
+        return Iterable.class.isAssignableFrom(fieldType) && !fieldType.equals(ClassInfoList.class);
     }
 
     public boolean isTypeOf(Class<?> type) {

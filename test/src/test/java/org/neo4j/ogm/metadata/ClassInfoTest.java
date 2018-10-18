@@ -371,12 +371,12 @@ public class ClassInfoTest {
 
     @Test
     public void testClassInfoForAbstractClassImplementingInterface() {
-        assertThat(metaData.classInfo("Membership").interfacesInfo().list().size()).isEqualTo(1);
+        assertThat(metaData.classInfo("Membership").interfacesInfo().size()).isEqualTo(1);
     }
 
     @Test
     public void testClassInfoForAbstractClassImplementingInterfaceName() {
-        assertThat(metaData.classInfo("Membership").interfacesInfo().list().iterator().next().toString()
+        assertThat(metaData.classInfo("Membership").interfacesInfo().iterator().next().toString()
             .contains("IMembership")).isTrue();
     }
 

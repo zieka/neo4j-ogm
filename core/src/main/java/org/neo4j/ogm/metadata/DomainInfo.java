@@ -50,10 +50,25 @@ public class DomainInfo {
     private final Set<Class> enumTypes = new HashSet<>();
     private final ConversionCallbackRegistry conversionCallbackRegistry = new ConversionCallbackRegistry();
 
-    public static DomainInfo create(String... packages) {
+    public static DomainInfo create(String... packagesOrClasses) {
+
+        List<String> packages = new ArrayList<>(packagesOrClasses.length);
+        Set<String> classes = new HashSet<>(packagesOrClasses.length);
+
+        for (String packageOrClass : packagesOrClasses) {
+            try {
+                Class.forName(packageOrClass);
+                classes.add(packageOrClass);
+            } catch (ClassNotFoundException e) {
+                packages.add(packageOrClass);
+            }
+        }
+
 
         ScanResult scanResult = new ClassGraph()
-            .whitelistPackages(packages)
+            .enableAllInfo()
+            .whitelistPackages(packages.toArray(new String[]{}))
+            .whitelistClasses(classes.toArray(new String[]{}))
             .scan();
 
         ClassInfoList allClasses = scanResult.getAllClasses();
@@ -162,13 +177,13 @@ public class DomainInfo {
         LOGGER.info("Building interface class map for {} classes", classNameToClassInfo.values().size());
         for (ClassInfo classInfo : classNameToClassInfo.values()) {
             LOGGER.debug(" - {} implements {} interfaces", classInfo.simpleName(),
-                classInfo.interfacesInfo().list().size());
-            for (InterfaceInfo iface : classInfo.interfacesInfo().list()) {
-                ArrayList<ClassInfo> classInfoList = interfaceNameToClassInfo.get(iface.name());
+                classInfo.interfacesInfo().size());
+            for (io.github.classgraph.ClassInfo iface : classInfo.interfacesInfo()) {
+                ArrayList<ClassInfo> classInfoList = interfaceNameToClassInfo.get(iface.getName());
                 if (classInfoList == null) {
-                    interfaceNameToClassInfo.put(iface.name(), classInfoList = new ArrayList<>());
+                    interfaceNameToClassInfo.put(iface.getName(), classInfoList = new ArrayList<>());
                 }
-                LOGGER.debug("   - {}", iface.name());
+                LOGGER.debug("   - {}", iface.getName());
                 classInfoList.add(classInfo);
             }
         }
@@ -190,7 +205,7 @@ public class DomainInfo {
         for (ClassInfo classInfo : classNameToClassInfo.values()) {
 
             if (classInfo.name() == null || classInfo.name().equals("java.lang.Object"))
-                continue;
+            continue;
 
             LOGGER.debug("Post-processing: {}", classInfo.name());
 
@@ -204,7 +219,7 @@ public class DomainInfo {
                 extend(classInfo, classInfo.directSubclasses());
             }
 
-            for (InterfaceInfo interfaceInfo : classInfo.interfacesInfo().list()) {
+            for (io.github.classgraph.ClassInfo interfaceInfo : classInfo.interfacesInfo()) {
                 implement(classInfo, interfaceInfo);
             }
         }
@@ -290,9 +305,9 @@ public class DomainInfo {
         }
     }
 
-    private void implement(ClassInfo implementingClass, InterfaceInfo interfaceInfo) {
+    private void implement(ClassInfo implementingClass, io.github.classgraph.ClassInfo interfaceInfo) {
 
-        ClassInfo interfaceClass = classNameToClassInfo.get(interfaceInfo.name());
+        ClassInfo interfaceClass = classNameToClassInfo.get(interfaceInfo.getName());
 
         if (interfaceClass != null) {
             if (!implementingClass.directInterfaces().contains(interfaceClass)) {
@@ -309,7 +324,7 @@ public class DomainInfo {
                 implement(subClassInfo, interfaceInfo);
             }
         } else {
-            LOGGER.debug(" - No ClassInfo found for interface class: {}", interfaceInfo.name());
+            LOGGER.debug(" - No ClassInfo found for interface class: {}", interfaceInfo.getName());
         }
     }
 
