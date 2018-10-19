@@ -37,7 +37,7 @@ public class FieldsInfo {
 
     private final Map<String, FieldInfo> fields;
 
-    public FieldsInfo(ClassInfo classInfo, Class<?> cls, io.github.classgraph.ClassInfo scanClassInfo) {
+    FieldsInfo(ClassInfo classInfo, io.github.classgraph.ClassInfo scanClassInfo) {
         this.fields = new HashMap<>();
 
         for (io.github.classgraph.FieldInfo fieldInfo : scanClassInfo.getFieldInfo()) {

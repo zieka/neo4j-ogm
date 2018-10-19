@@ -14,6 +14,7 @@
 package org.neo4j.ogm.metadata;
 
 import io.github.classgraph.ClassInfoList;
+import io.github.classgraph.FieldInfoList;
 import io.github.classgraph.MethodInfoList;
 
 import java.lang.reflect.Field;
@@ -231,8 +232,12 @@ public class FieldInfo {
     }
 
     public boolean isIterable() {
-        return Iterable.class.isAssignableFrom(fieldType) && !fieldType.equals(ClassInfoList.class)
-            && !fieldType.equals(MethodInfoList.class);
+        return Iterable.class.isAssignableFrom(fieldType)
+
+            // This is just needed because we scan each and every class within a package
+            // and will find infrastructure code esp. in tests
+            && !fieldType.equals(ClassInfoList.class) && !fieldType.equals(MethodInfoList.class)
+            && !fieldType.equals(FieldInfoList.class);
     }
 
     public boolean isTypeOf(Class<?> type) {

@@ -14,6 +14,7 @@
 package org.neo4j.ogm.metadata;
 
 import io.github.classgraph.ClassInfoList;
+import io.github.classgraph.FieldInfoList;
 import io.github.classgraph.MethodInfoList;
 
 import java.lang.reflect.Field;
@@ -67,10 +68,10 @@ public class ClassInfo {
     private final List<ClassInfo> directSubclasses = new ArrayList<>();
     private final List<ClassInfo> directInterfaces = new ArrayList<>();
     private final List<ClassInfo> directImplementingClasses = new ArrayList<>();
-    private final io.github.classgraph.ClassInfo scanClassInfo;
 
     private MethodInfoList methods;
     private ClassInfoList interfaces;
+    private FieldInfoList fields;
 
     private String className;
     private String directSuperclassName;
@@ -103,7 +104,6 @@ public class ClassInfo {
     private IdStrategy idStrategy;
 
     public ClassInfo(io.github.classgraph.ClassInfo scanClassInfo) {
-        this.scanClassInfo = scanClassInfo;
         this.cls = scanClassInfo.loadClass();
 
         this.isInterface = scanClassInfo.isInterface();
@@ -116,7 +116,9 @@ public class ClassInfo {
         }
         interfaces = scanClassInfo.getInterfaces();
         methods = scanClassInfo.getMethodInfo();
-        this.fieldsInfo = new FieldsInfo(this, cls, scanClassInfo);
+        fields = scanClassInfo.getFieldInfo();
+
+        this.fieldsInfo = new FieldsInfo(this, scanClassInfo);
         this.annotationsInfo = new AnnotationsInfo(cls);
 
         if (isRelationshipEntity() && labelFieldOrNull() != null) {
@@ -594,7 +596,7 @@ public class ClassInfo {
         if (field != null) {
             return field;
         }
-        field = scanClassInfo.getFieldInfo(fieldInfo.getName()).loadClassAndGetField();
+        field = fields.get(fieldInfo.getName()).loadClassAndGetField();
         if (field != null) {
             fieldInfoFields.put(fieldInfo, field);
             return field;
@@ -669,7 +671,7 @@ public class ClassInfo {
      * where X is the generic parameter type of the Array or Iterable
      *
      * @param iteratedType the type of iterable
-     * @return {@link List} of {@link MethodInfo}, never <code>null</code>
+     * @return {@link List} of {@link FieldInfo}, never <code>null</code>
      */
     public List<FieldInfo> findIterableFields(Class iteratedType) {
         if (iterableFieldsForType.containsKey(iteratedType)) {
@@ -704,7 +706,7 @@ public class ClassInfo {
      * @param relationshipType      the relationship type
      * @param relationshipDirection the relationship direction
      * @param strict                if true, does not infer relationship type but looks for it in the @Relationship annotation. Null if missing. If false, infers relationship type from FieldInfo
-     * @return {@link List} of {@link MethodInfo}, never <code>null</code>
+     * @return {@link List} of {@link FieldInfo}, never <code>null</code>
      */
     public List<FieldInfo> findIterableFields(Class iteratedType, String relationshipType, String relationshipDirection,
         boolean strict) {
