@@ -87,26 +87,21 @@ public class DomainInfo {
 
         ClassInfo thisClassInfo = domainInfo.classNameToClassInfo.computeIfAbsent(className, k -> classInfo);
 
-        if (!thisClassInfo.hydrated()) {
+        ClassInfo superclassInfo = domainInfo.classNameToClassInfo.get(superclassName);
+        if (superclassInfo == null) {
 
-            thisClassInfo.hydrate(classInfo);
+            if (superclassName != null && !superclassName.equals("java.lang.Object") && !superclassName
+                .equals("java.lang.Enum")) {
 
-            ClassInfo superclassInfo = domainInfo.classNameToClassInfo.get(superclassName);
-            if (superclassInfo == null) {
-
-                if (superclassName != null && !superclassName.equals("java.lang.Object") && !superclassName
-                    .equals("java.lang.Enum")) {
-//                    domainInfo.classNameToClassInfo.put(superclassName, new ClassInfo(superclassName, thisClassInfo));
-                    io.github.classgraph.ClassInfo scanClassInfo1 = allClasses.get(superclassName);
-                    if (scanClassInfo1 != null) {
-                        processClass(domainInfo, scanClassInfo1, allClasses);
-                        superclassInfo = domainInfo.classNameToClassInfo.get(superclassName);
-                        superclassInfo.addSubclass(thisClassInfo);
-                    }
+                io.github.classgraph.ClassInfo scanClassInfo1 = allClasses.get(superclassName);
+                if (scanClassInfo1 != null) {
+                    processClass(domainInfo, scanClassInfo1, allClasses);
+                    superclassInfo = domainInfo.classNameToClassInfo.get(superclassName);
+                    superclassInfo.addSubclass(thisClassInfo);
                 }
-            } else {
-                superclassInfo.addSubclass(thisClassInfo);
             }
+        } else {
+            superclassInfo.addSubclass(thisClassInfo);
         }
 
         if (thisClassInfo.isEnum()) {

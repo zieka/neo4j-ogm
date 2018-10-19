@@ -79,7 +79,6 @@ public class ClassInfo {
     private boolean isInterface;
     private boolean isAbstract;
     private boolean isEnum;
-    private boolean hydrated;
     private FieldsInfo fieldsInfo;
     private AnnotationsInfo annotationsInfo;
 
@@ -146,29 +145,6 @@ public class ClassInfo {
         return false;
     }
 
-    /**
-     * A class that was previously only seen as a temp superclass of another class can now be fully hydrated.
-     *
-     * @param classInfoDetails ClassInfo details
-     */
-    void hydrate(ClassInfo classInfoDetails) {
-
-        if (!this.hydrated) {
-            this.hydrated = true;
-
-            this.isAbstract = classInfoDetails.isAbstract;
-            this.isInterface = classInfoDetails.isInterface;
-            this.isEnum = classInfoDetails.isEnum;
-            this.directSuperclassName = classInfoDetails.directSuperclassName;
-            this.cls = classInfoDetails.cls;
-            this.interfaces = classInfoDetails.interfaces;
-            this.methods = classInfoDetails.methods;
-
-            this.annotationsInfo.append(classInfoDetails.annotationsInfo());
-            this.fieldsInfo.append(classInfoDetails.fieldsInfo());
-        }
-    }
-
     void extend(ClassInfo classInfo) {
         this.interfaces = classInfo.interfaces;
         this.methods = classInfo.methods;
@@ -189,10 +165,6 @@ public class ClassInfo {
         }
         subclass.directSuperclass = this;
         this.directSubclasses.add(subclass);
-    }
-
-    boolean hydrated() {
-        return hydrated;
     }
 
     public String name() {
@@ -983,7 +955,7 @@ public class ClassInfo {
         }
 
         List<io.github.classgraph.MethodInfo> possiblePostLoadMethods =
-            methods.stream().filter(methodInfo -> methodInfo.hasAnnotation("org.neo4j.ogm.annotation.PostLoad"))
+            methods.stream().filter(methodInfo -> methodInfo.hasAnnotation(PostLoad.class.getName()))
                 .collect(Collectors.toList());
         if (possiblePostLoadMethods.size() > 1) {
             throw new MetadataException(String
