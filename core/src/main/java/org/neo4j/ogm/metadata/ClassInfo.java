@@ -13,6 +13,7 @@
 
 package org.neo4j.ogm.metadata;
 
+import io.github.classgraph.AnnotationInfoList;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.FieldInfoList;
 import io.github.classgraph.MethodInfoList;
@@ -72,6 +73,7 @@ public class ClassInfo {
     private MethodInfoList methods;
     private ClassInfoList interfaces;
     private FieldInfoList fields;
+    private AnnotationInfoList annotations;
 
     private String className;
     private String directSuperclassName;
@@ -80,7 +82,6 @@ public class ClassInfo {
     private boolean isAbstract;
     private boolean isEnum;
     private FieldsInfo fieldsInfo;
-    private AnnotationsInfo annotationsInfo;
 
     private ClassInfo directSuperclass;
     private Map<Class, List<FieldInfo>> iterableFieldsForType = new HashMap<>();
@@ -116,9 +117,8 @@ public class ClassInfo {
         interfaces = scanClassInfo.getInterfaces();
         methods = scanClassInfo.getMethodInfo();
         fields = scanClassInfo.getFieldInfo();
-
+        annotations = scanClassInfo.getAnnotationInfo();
         this.fieldsInfo = new FieldsInfo(this, scanClassInfo);
-        this.annotationsInfo = new AnnotationsInfo(cls);
 
         if (isRelationshipEntity() && labelFieldOrNull() != null) {
             throw new MappingException(
@@ -200,14 +200,18 @@ public class ClassInfo {
 
     public String neo4jName() {
         if (neo4jName == null) {
-            AnnotationInfo annotationInfo = annotationsInfo.get(NodeEntity.class);
+            io.github.classgraph.AnnotationInfo annotationInfo = annotations.get(NodeEntity.class.getName());
             if (annotationInfo != null) {
-                neo4jName = annotationInfo.get(NodeEntity.LABEL, simpleName());
+                Object labelValue = annotationInfo.getParameterValues().get(NodeEntity.LABEL);
+                if (labelValue == null) {
+                    labelValue = annotationInfo.getParameterValues().get("value");
+                }
+                neo4jName = labelValue != null ? (String) labelValue : simpleName();
                 return neo4jName;
             }
-            annotationInfo = annotationsInfo.get(RelationshipEntity.class);
-            if (annotationInfo != null) {
-                neo4jName = annotationInfo.get(RelationshipEntity.TYPE, simpleName().toUpperCase());
+
+            if (isRelationshipEntity()) {
+                neo4jName = getRelationshipType(simpleName().toUpperCase());
                 return neo4jName;
             }
             if (!isAbstract) {
@@ -219,7 +223,7 @@ public class ClassInfo {
 
     private Collection<String> collectLabels() {
         List<String> labelNames = new ArrayList<>();
-        if (!isAbstract || annotationsInfo.get(NodeEntity.class) != null) {
+        if (!isAbstract || annotations.get(NodeEntity.class.getName()) != null) {
             labelNames.add(neo4jName());
         }
         if (directSuperclass != null && !"java.lang.Object".equals(directSuperclass.className)) {
@@ -247,8 +251,22 @@ public class ClassInfo {
         return interfaces;
     }
 
-    public Collection<AnnotationInfo> annotations() {
-        return annotationsInfo.list();
+    public AnnotationInfoList annotationsInfo() {
+        return annotations;
+    }
+
+    private String getRelationshipType(String fallback) {
+        io.github.classgraph.AnnotationInfo annotation = annotationsInfo().get(RelationshipEntity.class.getName());
+        Object value = annotation.getParameterValues().get(RelationshipEntity.TYPE);
+        if (value == null) {
+            value = annotation.getParameterValues().get("value");
+        }
+
+        return value != null ? (String) value : fallback;
+    }
+
+    public String getRelationshipType() {
+        return getRelationshipType(name());
     }
 
     public boolean isInterface() {
@@ -257,10 +275,6 @@ public class ClassInfo {
 
     public boolean isEnum() {
         return isEnum;
-    }
-
-    public AnnotationsInfo annotationsInfo() {
-        return annotationsInfo;
     }
 
     String superclassName() {
@@ -367,12 +381,7 @@ public class ClassInfo {
     }
 
     public boolean isRelationshipEntity() {
-        for (AnnotationInfo info : annotations()) {
-            if (info.getName().equals(RelationshipEntity.class.getName())) {
-                return true;
-            }
-        }
-        return false;
+        return annotations.containsName(RelationshipEntity.class.getName());
     }
 
     /**
@@ -699,7 +708,7 @@ public class ClassInfo {
     }
 
     public boolean isTransient() {
-        return annotationsInfo.get(Transient.class) != null;
+        return annotations.containsName(Transient.class.getName());
     }
 
     public boolean isAbstract() {

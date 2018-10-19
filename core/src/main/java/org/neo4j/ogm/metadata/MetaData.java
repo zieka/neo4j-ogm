@@ -110,8 +110,9 @@ public class MetaData {
         List<ClassInfo> labelledClasses = domainInfo.getClassInfosWithAnnotation(nodeEntityAnnotation);
         if (labelledClasses != null) {
             for (ClassInfo labelledClass : labelledClasses) {
-                AnnotationInfo annotationInfo = labelledClass.annotationsInfo().get(nodeEntityAnnotation);
-                String value = annotationInfo.get(annotationPropertyName, labelledClass.neo4jName());
+                io.github.classgraph.AnnotationInfo annotationInfo = labelledClass.annotationsInfo().get(nodeEntityAnnotation);
+                Object rawValue = annotationInfo.getParameterValues().get(annotationPropertyName);
+                String value = rawValue != null ? (String) rawValue : labelledClass.neo4jName();
                 if (value.equals(name)) {
                     return labelledClass;
                 }
@@ -125,8 +126,9 @@ public class MetaData {
         List<ClassInfo> labelledClasses = domainInfo.getClassInfosWithAnnotation(nodeEntityAnnotation);
         if (labelledClasses != null) {
             for (ClassInfo labelledClass : labelledClasses) {
-                AnnotationInfo annotationInfo = labelledClass.annotationsInfo().get(nodeEntityAnnotation);
-                String value = annotationInfo.get("type", labelledClass.neo4jName());
+                io.github.classgraph.AnnotationInfo annotationInfo = labelledClass.annotationsInfo().get(nodeEntityAnnotation);
+                Object rawValue = annotationInfo.getParameterValues().get("type");
+                String value = rawValue != null ? (String) rawValue : labelledClass.neo4jName();
                 if (value.equals(name)) {
                     classInfos.add(labelledClass);
                 }
@@ -270,7 +272,7 @@ public class MetaData {
 
     public boolean isRelationshipEntity(String className) {
         ClassInfo classInfo = classInfo(className);
-        return classInfo != null && null != classInfo.annotationsInfo().get(RelationshipEntity.class);
+        return classInfo != null && null != classInfo.annotationsInfo().get(RelationshipEntity.class.getName());
     }
 
     private ClassInfo findSingleImplementor(String taxon) {
@@ -289,8 +291,7 @@ public class MetaData {
     public String entityType(String name) {
         ClassInfo classInfo = classInfo(name);
         if (isRelationshipEntity(classInfo.name())) {
-            AnnotationInfo annotation = classInfo.annotationsInfo().get(RelationshipEntity.class);
-            return annotation.get(RelationshipEntity.TYPE, classInfo.name());
+            return classInfo.getRelationshipType();
         }
         return classInfo.neo4jName();
     }

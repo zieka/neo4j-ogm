@@ -13,6 +13,7 @@
 
 package org.neo4j.ogm.metadata;
 
+import io.github.classgraph.AnnotationInfoList;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.FieldInfoList;
 import io.github.classgraph.MethodInfoList;
@@ -237,7 +238,7 @@ public class FieldInfo {
             // This is just needed because we scan each and every class within a package
             // and will find infrastructure code esp. in tests
             && !fieldType.equals(ClassInfoList.class) && !fieldType.equals(MethodInfoList.class)
-            && !fieldType.equals(FieldInfoList.class);
+            && !fieldType.equals(FieldInfoList.class) && !fieldType.equals(AnnotationInfoList.class);
     }
 
     public boolean isTypeOf(Class<?> type) {

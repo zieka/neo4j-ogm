@@ -87,7 +87,7 @@ public class LoadOneDelegate extends SessionDelegate {
         ClassInfo typeInfo = session.metaData().classInfo(type.getName());
 
         FieldInfo primaryIndex = typeInfo.primaryIndexField();
-        if (typeInfo.annotationsInfo().get(RelationshipEntity.class) == null) {
+        if (typeInfo.annotationsInfo().get(RelationshipEntity.class.getName()) == null) {
             if (primaryIndex == null) {
                 ref = session.context().getNodeEntity((Long) id);
             } else {

@@ -30,7 +30,6 @@ import org.neo4j.ogm.cypher.compiler.NodeBuilder;
 import org.neo4j.ogm.cypher.compiler.PropertyContainerBuilder;
 import org.neo4j.ogm.cypher.compiler.RelationshipBuilder;
 import org.neo4j.ogm.exception.core.MappingException;
-import org.neo4j.ogm.metadata.AnnotationInfo;
 import org.neo4j.ogm.metadata.ClassInfo;
 import org.neo4j.ogm.metadata.FieldInfo;
 import org.neo4j.ogm.metadata.MetaData;
@@ -120,8 +119,7 @@ public class EntityGraphMapper implements EntityMapper {
             // create or update the relationship if its not already been visited in the current compile context
             if (!compiler.context().visitedRelationshipEntity(mappingContext.nativeId(entity))) {
 
-                AnnotationInfo annotationInfo = reInfo.annotationsInfo().get(RelationshipEntity.class);
-                String relationshipType = annotationInfo.get(RelationshipEntity.TYPE, null);
+                String relationshipType = reInfo.getRelationshipType();
                 DirectedRelationship directedRelationship = new DirectedRelationship(relationshipType,
                     Relationship.OUTGOING);
 
@@ -674,9 +672,8 @@ public class EntityGraphMapper implements EntityMapper {
         Long reIdentity = mappingContext.nativeId(relationshipEntity);
         context.visitRelationshipEntity(reIdentity);
 
-        AnnotationInfo annotation = relEntityClassInfo.annotationsInfo().get(RelationshipEntity.class);
         if (relationshipBuilder.type() == null) {
-            relationshipBuilder.setType(annotation.get(RelationshipEntity.TYPE, relEntityClassInfo.name()));
+            relationshipBuilder.setType(relEntityClassInfo.getRelationshipType());
         }
 
         // if the RE is new, register it in the context so that we can set its ID correctly when it is created,
@@ -941,7 +938,7 @@ public class EntityGraphMapper implements EntityMapper {
      */
     private boolean isRelationshipEntity(Object potentialRelationshipEntity) {
         ClassInfo classInfo = metaData.classInfo(potentialRelationshipEntity);
-        return classInfo != null && null != classInfo.annotationsInfo().get(RelationshipEntity.class);
+        return classInfo != null && null != classInfo.annotationsInfo().get(RelationshipEntity.class.getName());
     }
 
     /**

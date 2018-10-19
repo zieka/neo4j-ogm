@@ -15,6 +15,7 @@ package org.neo4j.ogm.metadata;
 
 import static java.util.Comparator.*;
 
+import io.github.classgraph.AnnotationInfo;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
@@ -84,7 +85,6 @@ public class DomainInfo {
             return;
         }
 
-
         ClassInfo thisClassInfo = domainInfo.classNameToClassInfo.computeIfAbsent(className, k -> classInfo);
 
         ClassInfo superclassInfo = domainInfo.classNameToClassInfo.get(superclassName);
@@ -127,6 +127,7 @@ public class DomainInfo {
             .enableAllInfo()
             .whitelistPackages(packages.toArray(new String[] {}))
             .whitelistClasses(classes.toArray(new String[] {}))
+            //            .enableExternalClasses()
             .scan();
 
         return scanResult.getAllClasses();
@@ -174,12 +175,11 @@ public class DomainInfo {
 
         LOGGER.info("Building annotation class map");
         for (ClassInfo classInfo : classNameToClassInfo.values()) {
-            for (AnnotationInfo annotation : classInfo.annotations()) {
-                List<ClassInfo> classInfoList = annotationNameToClassInfo.get(annotation.getName());
-                if (classInfoList == null) {
-                    annotationNameToClassInfo.put(annotation.getName(), classInfoList = new ArrayList<>());
-                }
-                classInfoList.add(classInfo);
+            for (AnnotationInfo annotation : classInfo.annotationsInfo()) {
+
+                annotationNameToClassInfo
+                    .computeIfAbsent(annotation.getName(), k -> new ArrayList<>())
+                    .add(classInfo);
             }
         }
     }
