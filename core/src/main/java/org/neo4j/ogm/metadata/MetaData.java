@@ -173,7 +173,7 @@ public class MetaData {
                 // if its a subclass, we replace the previously found class with this one.
                 if (taxonClassInfo != null) {
                     LOGGER.debug("concrete class found: {}. comparing with what's already been found previously...",
-                        taxonClassInfo);
+                        taxonClassInfo.name());
                     for (ClassInfo found : resolved) {
                         if (taxonClassInfo.isSubclassOf(found)) {
                             LOGGER.debug("{} is a subclass of {} and will replace it.", taxonClassInfo, found);

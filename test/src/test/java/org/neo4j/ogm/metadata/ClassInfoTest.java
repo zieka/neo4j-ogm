@@ -18,6 +18,9 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.rules.ExpectedException.none;
 import static org.neo4j.ogm.annotation.Relationship.*;
 
+import io.github.classgraph.MethodInfo;
+import io.github.classgraph.MethodInfoList;
+
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -458,7 +461,7 @@ public class ClassInfoTest {
     public void shouldExcludeStaticInitialisersFromPersistenceMethods() {
 
         ClassInfo classInfo = metaData.classInfo("SecurityRole");
-        Collection<MethodInfo> methodInfos = classInfo.methodsInfo().findMethodInfoBy(m -> true);
+        MethodInfoList methodInfos = classInfo.methodsInfo();
 
         for (MethodInfo methodInfo : methodInfos) {
             assertThat(methodInfo.getName().equals("<clinit>")).isFalse();

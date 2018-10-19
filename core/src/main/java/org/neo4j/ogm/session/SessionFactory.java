@@ -26,6 +26,7 @@ import org.neo4j.ogm.exception.core.ConfigurationException;
 import org.neo4j.ogm.id.IdStrategy;
 import org.neo4j.ogm.metadata.ClassInfo;
 import org.neo4j.ogm.metadata.MetaData;
+import org.neo4j.ogm.metadata.reflect.EntityAccessManager;
 import org.neo4j.ogm.metadata.reflect.ReflectionEntityInstantiator;
 import org.neo4j.ogm.session.event.EventListener;
 
@@ -95,6 +96,7 @@ public class SessionFactory {
      * @param packages The packages to scan for domain objects
      */
     public SessionFactory(Driver driver, String... packages) {
+        EntityAccessManager.clearCaches();
         this.metaData = new MetaData(packages);
         this.driver = driver;
         this.eventListeners = new CopyOnWriteArrayList<>();

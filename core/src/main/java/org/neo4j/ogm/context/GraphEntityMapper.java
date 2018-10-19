@@ -16,6 +16,8 @@ package org.neo4j.ogm.context;
 import static org.neo4j.ogm.annotation.Relationship.*;
 import static org.neo4j.ogm.metadata.reflect.EntityAccessManager.*;
 
+import io.github.classgraph.MethodInfo;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -26,7 +28,6 @@ import org.neo4j.ogm.exception.core.MappingException;
 import org.neo4j.ogm.metadata.ClassInfo;
 import org.neo4j.ogm.metadata.FieldInfo;
 import org.neo4j.ogm.metadata.MetaData;
-import org.neo4j.ogm.metadata.MethodInfo;
 import org.neo4j.ogm.metadata.reflect.EntityAccessManager;
 import org.neo4j.ogm.metadata.reflect.EntityFactory;
 import org.neo4j.ogm.model.Edge;
@@ -186,7 +187,7 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
         ClassInfo classInfo = metadata.classInfo(instance);
         MethodInfo postLoadMethod = classInfo.postLoadMethodOrNull();
         if (postLoadMethod != null) {
-            final Method method = classInfo.getMethod(postLoadMethod);
+            final Method method = postLoadMethod.loadClassAndGetMethod();
             try {
                 if(!method.isAccessible()) {
                     method.setAccessible(true);

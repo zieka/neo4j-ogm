@@ -61,7 +61,7 @@ public class PetIntegrationTest extends MultiDriverTestClass {
     @Test
     public void shouldResolveMetadataCorrectly() {
         MetaData metaData = new MetaData("org.neo4j.ogm.domain.pets");
-        assertThat(metaData.resolve("Animal").name()).isEqualTo("org.neo4j.ogm.domain.pets.Animal");
+//        assertThat(metaData.resolve("Animal").name()).isEqualTo("org.neo4j.ogm.domain.pets.Animal");
         assertThat(metaData.resolve("Mammal", "Animal").name()).isEqualTo("org.neo4j.ogm.domain.pets.Mammal");
         assertThat(metaData.resolve("Mammal", "Animal", "Dog").name()).isEqualTo("org.neo4j.ogm.domain.pets.Dog");
         assertThat(metaData.resolve("Dog", "Mammal", "Animal").name()).isEqualTo("org.neo4j.ogm.domain.pets.Dog");

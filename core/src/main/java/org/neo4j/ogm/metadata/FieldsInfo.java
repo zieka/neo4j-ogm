@@ -13,7 +13,6 @@
 
 package org.neo4j.ogm.metadata;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
@@ -38,14 +37,11 @@ public class FieldsInfo {
 
     private final Map<String, FieldInfo> fields;
 
-    FieldsInfo() {
-        this.fields = new HashMap<>();
-    }
-
-    public FieldsInfo(ClassInfo classInfo, Class<?> cls) {
+    public FieldsInfo(ClassInfo classInfo, Class<?> cls, io.github.classgraph.ClassInfo scanClassInfo) {
         this.fields = new HashMap<>();
 
-        for (Field field : cls.getDeclaredFields()) {
+        for (io.github.classgraph.FieldInfo fieldInfo : scanClassInfo.getFieldInfo()) {
+            Field field = fieldInfo.loadClassAndGetField();
             final int modifiers = field.getModifiers();
             if (!Modifier.isTransient(modifiers) && !Modifier.isFinal(modifiers) && !Modifier.isStatic(modifiers)) {
                 ObjectAnnotations objectAnnotations = ObjectAnnotations.of(field.getDeclaredAnnotations());

@@ -13,11 +13,10 @@
 
 package org.neo4j.ogm.metadata;
 
-import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfoList;
+import io.github.classgraph.MethodInfoList;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -68,7 +67,11 @@ public class ClassInfo {
     private final List<ClassInfo> directSubclasses = new ArrayList<>();
     private final List<ClassInfo> directInterfaces = new ArrayList<>();
     private final List<ClassInfo> directImplementingClasses = new ArrayList<>();
+    private final io.github.classgraph.ClassInfo scanClassInfo;
+
+    private MethodInfoList methods;
     private ClassInfoList interfaces;
+
     private String className;
     private String directSuperclassName;
     private String neo4jName;
@@ -77,7 +80,6 @@ public class ClassInfo {
     private boolean isEnum;
     private boolean hydrated;
     private FieldsInfo fieldsInfo;
-    private MethodsInfo methodsInfo;
     private AnnotationsInfo annotationsInfo;
 
     private ClassInfo directSuperclass;
@@ -94,29 +96,14 @@ public class ClassInfo {
     private volatile FieldInfo labelField = null;
     private volatile boolean labelFieldMapped = false;
     private volatile boolean isPostLoadMethodMapped = false;
-    private volatile MethodInfo postLoadMethod;
+    private volatile io.github.classgraph.MethodInfo postLoadMethod;
     private boolean primaryIndexFieldChecked = false;
     private Class<?> cls;
     private Class<? extends IdStrategy> idStrategyClass;
     private IdStrategy idStrategy;
 
-    /**
-     * This class was referenced as a superclass of the given subclass.
-     *
-     * @param name     the name of the class
-     * @param subclass {@link ClassInfo} of the subclass
-     */
-    ClassInfo(String name, ClassInfo subclass) {
-        this.className = name;
-        this.hydrated = false;
-        this.fieldsInfo = new FieldsInfo();
-        this.methodsInfo = new MethodsInfo();
-        this.annotationsInfo = new AnnotationsInfo();
-        this.interfaces = new ClassGraph().whitelistClasses(name).scan().getAllInterfaces();
-        addSubclass(subclass);
-    }
-
     public ClassInfo(io.github.classgraph.ClassInfo scanClassInfo) {
+        this.scanClassInfo = scanClassInfo;
         this.cls = scanClassInfo.loadClass();
 
         this.isInterface = scanClassInfo.isInterface();
@@ -128,8 +115,8 @@ public class ClassInfo {
             this.directSuperclassName = scanClassInfo.getSuperclass().getName();
         }
         interfaces = scanClassInfo.getInterfaces();
-        this.fieldsInfo = new FieldsInfo(this, cls);
-        this.methodsInfo = new MethodsInfo(cls);
+        methods = scanClassInfo.getMethodInfo();
+        this.fieldsInfo = new FieldsInfo(this, cls, scanClassInfo);
         this.annotationsInfo = new AnnotationsInfo(cls);
 
         if (isRelationshipEntity() && labelFieldOrNull() != null) {
@@ -145,6 +132,16 @@ public class ClassInfo {
                         name(), fieldInfo.getName()));
             }
         }
+    }
+
+    private static boolean isDeclaredField(Field[] declaredFields, String name) {
+
+        for (Field field : declaredFields) {
+            if (field.getName().equals(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -163,17 +160,18 @@ public class ClassInfo {
             this.directSuperclassName = classInfoDetails.directSuperclassName;
             this.cls = classInfoDetails.cls;
             this.interfaces = classInfoDetails.interfaces;
+            this.methods = classInfoDetails.methods;
 
             this.annotationsInfo.append(classInfoDetails.annotationsInfo());
             this.fieldsInfo.append(classInfoDetails.fieldsInfo());
-            this.methodsInfo.append(classInfoDetails.methodsInfo());
         }
     }
 
     void extend(ClassInfo classInfo) {
         this.interfaces = classInfo.interfaces;
+        this.methods = classInfo.methods;
+
         this.fieldsInfo.append(classInfo.fieldsInfo());
-        this.methodsInfo.append(classInfo.methodsInfo());
     }
 
     /**
@@ -299,8 +297,8 @@ public class ClassInfo {
         return fieldsInfo;
     }
 
-    MethodsInfo methodsInfo() {
-        return methodsInfo;
+    MethodInfoList methodsInfo() {
+        return methods;
     }
 
     public FieldInfo identityFieldOrNull() {
@@ -596,11 +594,11 @@ public class ClassInfo {
         if (field != null) {
             return field;
         }
-        try {
-            field = cls.getDeclaredField(fieldInfo.getName());
+        field = scanClassInfo.getFieldInfo(fieldInfo.getName()).loadClassAndGetField();
+        if (field != null) {
             fieldInfoFields.put(fieldInfo, field);
             return field;
-        } catch (NoSuchFieldException e) {
+        } else {
             if (directSuperclass() != null) {
                 field = directSuperclass().getField(fieldInfo);
                 fieldInfoFields.put(fieldInfo, field);
@@ -610,16 +608,6 @@ public class ClassInfo {
                     "Field " + fieldInfo.getName() + " not found in class " + name() + " or any of its superclasses");
             }
         }
-    }
-
-    /**
-     * Returns the Method corresponding to the supplied MethodInfo as declared by the class represented by this ClassInfo
-     *
-     * @param methodInfo the MethodInfo used to obtain the Method
-     * @return a Method
-     */
-    public Method getMethod(MethodInfo methodInfo) {
-        return methodInfo.getMethod();
     }
 
     /**
@@ -853,16 +841,6 @@ public class ClassInfo {
         return indexes;
     }
 
-    private static boolean isDeclaredField(Field[] declaredFields, String name) {
-
-        for (Field field : declaredFields) {
-            if (field.getName().equals(name)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public Collection<CompositeIndex> getCompositeIndexes() {
         if (compositeIndexes == null) {
             compositeIndexes = initCompositeIndexFields();
@@ -992,19 +970,23 @@ public class ClassInfo {
         }
     }
 
-    public synchronized MethodInfo postLoadMethodOrNull() {
+    public synchronized io.github.classgraph.MethodInfo postLoadMethodOrNull() {
         initPostLoadMethod();
         return postLoadMethod;
     }
 
     private synchronized void initPostLoadMethod() {
-        if(isPostLoadMethodMapped) {
+        if (isPostLoadMethodMapped) {
             return;
         }
 
-        Collection<MethodInfo> possiblePostLoadMethods = methodsInfo.findMethodInfoBy(methodInfo -> methodInfo.hasAnnotation(PostLoad.class));
-        if(possiblePostLoadMethods.size() > 1) {
-            throw new MetadataException(String.format("Cannot have more than one post load method annotated with @PostLoad for class '%s'", this.className));
+        List<io.github.classgraph.MethodInfo> possiblePostLoadMethods =
+            methods.stream().filter(methodInfo -> methodInfo.hasAnnotation("org.neo4j.ogm.annotation.PostLoad"))
+                .collect(Collectors.toList());
+        if (possiblePostLoadMethods.size() > 1) {
+            throw new MetadataException(String
+                .format("Cannot have more than one post load method annotated with @PostLoad for class '%s'",
+                    this.className));
         }
 
         postLoadMethod = possiblePostLoadMethods.stream().findFirst().orElse(null);

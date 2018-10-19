@@ -255,6 +255,14 @@ public class EntityAccessManager {
     private static Map<ClassInfo, Map<DirectedRelationshipForType, FieldInfo>> relationalWriterCache = new HashMap<>();
     private static Map<ClassInfo, Map<DirectedRelationshipForType, FieldInfo>> iterableWriterCache = new HashMap<>();
 
+    public static void clearCaches() {
+        relationalReaderCache.clear();
+        relationalWriterCache.clear();
+        iterableWriterCache.clear();
+
+    }
+
+
     private static final boolean STRICT_MODE = true; //strict mode for matching readers and writers, will only look for explicit annotations
     private static final boolean INFERRED_MODE = false; //inferred mode for matching readers and writers, will infer the relationship type from the getter/setter
 

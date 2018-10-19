@@ -57,7 +57,7 @@ public class DomainInfo {
         DomainInfo domainInfo = new DomainInfo();
 
         for (io.github.classgraph.ClassInfo scanClassInfo : allClasses) {
-            processClass(domainInfo, scanClassInfo);
+            processClass(domainInfo, scanClassInfo, allClasses);
         }
 
         domainInfo.finish();
@@ -65,9 +65,15 @@ public class DomainInfo {
         return domainInfo;
     }
 
-    private static void processClass(DomainInfo domainInfo, io.github.classgraph.ClassInfo scanClassInfo) {
+    private static void processClass(DomainInfo domainInfo, io.github.classgraph.ClassInfo scanClassInfo,
+        ClassInfoList allClasses) {
 
         String className = scanClassInfo.getName();
+
+        if (domainInfo.classNameToClassInfo.containsKey(className)) {
+            return;
+        }
+
         ClassInfo classInfo = new ClassInfo(scanClassInfo);
         String superclassName = classInfo.superclassName();
 
@@ -77,6 +83,7 @@ public class DomainInfo {
             .equals(Object.class)) {
             return;
         }
+
 
         ClassInfo thisClassInfo = domainInfo.classNameToClassInfo.computeIfAbsent(className, k -> classInfo);
 
@@ -89,8 +96,13 @@ public class DomainInfo {
 
                 if (superclassName != null && !superclassName.equals("java.lang.Object") && !superclassName
                     .equals("java.lang.Enum")) {
-                    domainInfo.classNameToClassInfo
-                        .put(superclassName, new ClassInfo(superclassName, thisClassInfo));
+//                    domainInfo.classNameToClassInfo.put(superclassName, new ClassInfo(superclassName, thisClassInfo));
+                    io.github.classgraph.ClassInfo scanClassInfo1 = allClasses.get(superclassName);
+                    if (scanClassInfo1 != null) {
+                        processClass(domainInfo, scanClassInfo1, allClasses);
+                        superclassInfo = domainInfo.classNameToClassInfo.get(superclassName);
+                        superclassInfo.addSubclass(thisClassInfo);
+                    }
                 }
             } else {
                 superclassInfo.addSubclass(thisClassInfo);
