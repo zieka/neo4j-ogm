@@ -18,7 +18,11 @@ import static java.util.Comparator.*;
 import io.github.classgraph.AnnotationInfo;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfoList;
+import io.github.classgraph.ClassLoaderHandler;
 import io.github.classgraph.ScanResult;
+import io.github.classgraph.ScanSpec;
+import io.github.classgraph.utils.ClasspathOrder;
+import io.github.classgraph.utils.LogNode;
 
 import java.util.*;
 import java.util.function.Function;
@@ -115,22 +119,31 @@ public class DomainInfo {
         Set<String> classes = new HashSet<>(packagesOrClasses.length);
 
         for (String packageOrClass : packagesOrClasses) {
-            try {
-                Class.forName(packageOrClass);
+            if (isClass(packageOrClass)) {
                 classes.add(packageOrClass);
-            } catch (ClassNotFoundException e) {
+            } else {
                 packages.add(packageOrClass);
             }
         }
 
         ScanResult scanResult = new ClassGraph()
+            .registerClassLoaderHandler(OgmClassLoaderHandler.class)
             .enableAllInfo()
             .whitelistPackages(packages.toArray(new String[] {}))
             .whitelistClasses(classes.toArray(new String[] {}))
-            //            .enableExternalClasses()
+            // .enableExternalClasses() todo discuss behaviour change
             .scan();
 
         return scanResult.getAllClasses();
+    }
+
+    private static boolean isClass(String className) {
+        try {
+            Class.forName(className, false, Thread.currentThread().getContextClassLoader());
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 
     /**
@@ -452,5 +465,32 @@ public class DomainInfo {
 
     public List<ClassInfo> getClassInfos(String interfaceName) {
         return interfaceNameToClassInfo.get(interfaceName);
+    }
+
+    // This additional classLoaderHandler is needed for compatibility with other technologies like Spring Boot, for example.
+    public static class OgmClassLoaderHandler implements ClassLoaderHandler {
+        @Override
+        public String[] handledClassLoaders() {
+            return new String[] {
+                // Spring Boot Dev Tools class loader
+                "org.springframework.boot.devtools.restart.classloader.RestartClassLoader"
+            };
+        }
+
+        @Override
+        public ClassLoader getEmbeddedClassLoader(final ClassLoader outerClassLoaderInstance) {
+            return null;
+        }
+
+        @Override
+        public ClassLoaderHandler.DelegationOrder getDelegationOrder(final ClassLoader classLoaderInstance) {
+            return DelegationOrder.PARENT_LAST;
+        }
+
+        @Override
+        public void handle(final ScanSpec scanSpec, final ClassLoader classLoader,
+            final ClasspathOrder classpathOrderOut, final LogNode log) {
+
+        }
     }
 }
