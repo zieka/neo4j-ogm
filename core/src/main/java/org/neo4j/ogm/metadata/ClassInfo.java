@@ -16,11 +16,10 @@ package org.neo4j.ogm.metadata;
 import io.github.classgraph.AnnotationInfoList;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.FieldInfoList;
+import io.github.classgraph.MethodInfo;
 import io.github.classgraph.MethodInfoList;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
@@ -98,21 +97,22 @@ public class ClassInfo {
     private IdStrategy idStrategy;
 
     public ClassInfo(io.github.classgraph.ClassInfo scanClassInfo) {
-        this.cls = scanClassInfo.loadClass();
+        cls = scanClassInfo.loadClass();
+        isInterface = scanClassInfo.isInterface();
+        isAbstract = scanClassInfo.isAbstract();
+        isEnum = scanClassInfo.isEnum();
+        className = scanClassInfo.getName();
 
-        this.isInterface = scanClassInfo.isInterface();
-        this.isAbstract = scanClassInfo.isAbstract();
-        this.isEnum = scanClassInfo.isEnum();
-        this.className = scanClassInfo.getName();
-
-        if (scanClassInfo.getSuperclass() != null) {
-            this.directSuperclassName = scanClassInfo.getSuperclass().getName();
+        io.github.classgraph.ClassInfo superclass = scanClassInfo.getSuperclass();
+        if (superclass != null) {
+            directSuperclassName = superclass.getName();
         }
         interfaces = scanClassInfo.getInterfaces();
         methods = scanClassInfo.getMethodInfo();
         fields = scanClassInfo.getFieldInfo();
         annotations = scanClassInfo.getAnnotationInfo();
-        this.fieldsInfo = new FieldsInfo(this, scanClassInfo);
+        postLoadMethod = findPostLoadMethod(scanClassInfo);
+        fieldsInfo = new FieldsInfo(this, scanClassInfo);
 
         if (isRelationshipEntity() && labelFieldOrNull() != null) {
             throw new MappingException(
@@ -129,6 +129,40 @@ public class ClassInfo {
         }
     }
 
+    private MethodInfo findPostLoadMethod(io.github.classgraph.ClassInfo scanClassInfo) {
+        // first take a look at all the methods available in this class and check if they are annotated with @PostLoad
+
+        List<MethodInfo> possiblePostLoadMethods =
+            scanClassInfo.getDeclaredMethodInfo().stream().filter(methodInfo -> methodInfo.hasAnnotation(PostLoad.class.getName()))
+                .collect(Collectors.toList());
+
+        if (possiblePostLoadMethods.size() == 1) {
+            return possiblePostLoadMethods.get(0);
+        }
+
+        // looking through all classes in the hierarchy to find a method annotated with postLoad
+        for (io.github.classgraph.ClassInfo superclass : scanClassInfo.getSuperclasses()) {
+            possiblePostLoadMethods =
+                superclass.getDeclaredMethodInfo().stream().filter(methodInfo -> methodInfo.hasAnnotation(PostLoad.class.getName()))
+                    .collect(Collectors.toList());
+
+            if (possiblePostLoadMethods.size() == 1) {
+                // look into the current class again to see if the method is overwritten somewhere
+                MethodInfo methodInfo = possiblePostLoadMethods.get(0);
+                MethodInfoList overwrittenMethodInfo = scanClassInfo.getMethodInfo().get(methodInfo.getName());
+                return overwrittenMethodInfo.get(0);
+            }
+        }
+
+
+        if (possiblePostLoadMethods.size() > 1) {
+            throw new MetadataException(String
+                .format("Cannot have more than one post load method annotated with @PostLoad for class '%s'",
+                    this.className));
+        }
+        return null;
+    }
+
     private static boolean isDeclaredField(Field[] declaredFields, String name) {
 
         for (Field field : declaredFields) {
@@ -137,13 +171,6 @@ public class ClassInfo {
             }
         }
         return false;
-    }
-
-    void extend(ClassInfo classInfo) {
-        this.interfaces = classInfo.interfaces;
-        this.methods = classInfo.methods;
-
-        this.fieldsInfo.append(classInfo.fieldsInfo());
     }
 
     /**
@@ -297,7 +324,8 @@ public class ClassInfo {
      */
     public FieldInfo identityField() {
         initIdentityField();
-        return identityField.orElseThrow(() ->new MetadataException("No internal identity field found for class: " + this.className));
+        return identityField
+            .orElseThrow(() -> new MetadataException("No internal identity field found for class: " + this.className));
     }
 
     private synchronized void initIdentityField() {
@@ -942,27 +970,8 @@ public class ClassInfo {
         }
     }
 
-    public synchronized io.github.classgraph.MethodInfo postLoadMethodOrNull() {
-        initPostLoadMethod();
+    public synchronized io.github.classgraph.MethodInfo getPostLoadMethod() {
         return postLoadMethod;
-    }
-
-    private synchronized void initPostLoadMethod() {
-        if (isPostLoadMethodMapped) {
-            return;
-        }
-
-        List<io.github.classgraph.MethodInfo> possiblePostLoadMethods =
-            methods.stream().filter(methodInfo -> methodInfo.hasAnnotation(PostLoad.class.getName()))
-                .collect(Collectors.toList());
-        if (possiblePostLoadMethods.size() > 1) {
-            throw new MetadataException(String
-                .format("Cannot have more than one post load method annotated with @PostLoad for class '%s'",
-                    this.className));
-        }
-
-        postLoadMethod = possiblePostLoadMethods.stream().findFirst().orElse(null);
-        isPostLoadMethodMapped = true;
     }
 
     public FieldInfo getFieldInfo(String propertyName) {

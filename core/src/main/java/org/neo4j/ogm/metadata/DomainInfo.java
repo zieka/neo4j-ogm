@@ -239,9 +239,9 @@ public class DomainInfo {
                 continue;
             }
 
-            if (classInfo.superclassName() == null || classInfo.superclassName().equals("java.lang.Object")) {
-                extend(classInfo, classInfo.directSubclasses());
-            }
+//            if (classInfo.superclassName() == null || classInfo.superclassName().equals("java.lang.Object")) {
+//                extend(classInfo, classInfo.directSubclasses());
+//            }
 
             for (io.github.classgraph.ClassInfo interfaceInfo : classInfo.interfacesInfo()) {
                 implement(classInfo, interfaceInfo);
@@ -322,12 +322,12 @@ public class DomainInfo {
         return removed;
     }
 
-    private void extend(ClassInfo superclass, List<ClassInfo> subclasses) {
-        for (ClassInfo subclass : subclasses) {
-            subclass.extend(superclass);
-            extend(subclass, subclass.directSubclasses());
-        }
-    }
+//    private void extend(ClassInfo superclass, List<ClassInfo> subclasses) {
+//        for (ClassInfo subclass : subclasses) {
+//            subclass.extend(superclass);
+//            extend(subclass, subclass.directSubclasses());
+//        }
+//    }
 
     private void implement(ClassInfo implementingClass, io.github.classgraph.ClassInfo interfaceInfo) {
 

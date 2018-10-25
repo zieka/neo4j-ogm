@@ -46,6 +46,7 @@ public abstract class Entity {
 
     @PostLoad
     public void postLoad() {
+        System.out.println("bla");
     }
 
     @Override

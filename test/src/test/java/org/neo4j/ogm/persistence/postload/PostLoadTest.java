@@ -27,7 +27,7 @@ import org.neo4j.ogm.domain.generic_hierarchy.ChildB;
 import org.neo4j.ogm.domain.generic_hierarchy.ChildC;
 import org.neo4j.ogm.domain.postload.User;
 import org.neo4j.ogm.domain.postload.UserWithBetterPostLoadMethod;
-import org.neo4j.ogm.domain.postload.UserWithBrokenMethodDeclaration;
+import org.neo4j.ogm.domain.postloadbroken.UserWithBrokenMethodDeclaration;
 import org.neo4j.ogm.exception.core.MetadataException;
 import org.neo4j.ogm.session.Session;
 import org.neo4j.ogm.session.SessionFactory;
@@ -116,11 +116,8 @@ public class PostLoadTest extends MultiDriverTestClass {
     @Test // #516
     public void shouldPreventAmbiguousPostLoadScenario() {
 
-        UserWithBrokenMethodDeclaration user = new UserWithBrokenMethodDeclaration();
-        session.save(user);
-
         assertThatExceptionOfType(MetadataException.class)
-            .isThrownBy(() -> session.loadAll(UserWithBrokenMethodDeclaration.class))
+            .isThrownBy(() -> new SessionFactory(driver, "org.neo4j.ogm.domain.postloadbroken"))
             .withMessage("Cannot have more than one post load method annotated with @PostLoad for class '%s'",
                 UserWithBrokenMethodDeclaration.class.getName());
     }
