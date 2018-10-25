@@ -89,8 +89,7 @@ public class ClassInfo {
     private volatile FieldInfo primaryIndexField = null;
     private volatile FieldInfo labelField = null;
     private volatile boolean labelFieldMapped = false;
-    private volatile boolean isPostLoadMethodMapped = false;
-    private volatile io.github.classgraph.MethodInfo postLoadMethod;
+    private volatile MethodInfo postLoadMethod;
     private boolean primaryIndexFieldChecked = false;
     private Class<?> cls;
     private Class<? extends IdStrategy> idStrategyClass;
@@ -970,7 +969,7 @@ public class ClassInfo {
         }
     }
 
-    public synchronized io.github.classgraph.MethodInfo getPostLoadMethod() {
+    public synchronized MethodInfo getPostLoadMethod() {
         return postLoadMethod;
     }
 
