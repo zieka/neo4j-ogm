@@ -57,15 +57,16 @@ public class DomainInfo {
 
     public static DomainInfo create(String... packagesOrClasses) {
 
-        ClassInfoList allClasses = findClasses(packagesOrClasses);
+        ScanResult scanResult = findClasses(packagesOrClasses);
 
         DomainInfo domainInfo = new DomainInfo();
 
-        for (io.github.classgraph.ClassInfo scanClassInfo : allClasses) {
-            processClass(domainInfo, scanClassInfo, allClasses);
+        for (io.github.classgraph.ClassInfo scanClassInfo : scanResult.getAllClasses()) {
+            processClass(domainInfo, scanClassInfo, scanResult.getAllClasses());
         }
 
         domainInfo.finish();
+        scanResult.close();
 
         return domainInfo;
     }
@@ -114,7 +115,7 @@ public class DomainInfo {
         }
     }
 
-    private static ClassInfoList findClasses(String[] packagesOrClasses) {
+    private static ScanResult findClasses(String[] packagesOrClasses) {
         List<String> packages = new ArrayList<>(packagesOrClasses.length);
         Set<String> classes = new HashSet<>(packagesOrClasses.length);
 
@@ -134,7 +135,7 @@ public class DomainInfo {
             // .enableExternalClasses() todo discuss behaviour change
             .scan();
 
-        return scanResult.getAllClasses();
+        return scanResult;
     }
 
     private static boolean isClass(String className) {
@@ -239,10 +240,6 @@ public class DomainInfo {
                 continue;
             }
 
-//            if (classInfo.superclassName() == null || classInfo.superclassName().equals("java.lang.Object")) {
-//                extend(classInfo, classInfo.directSubclasses());
-//            }
-
             for (io.github.classgraph.ClassInfo interfaceInfo : classInfo.interfacesInfo()) {
                 implement(classInfo, interfaceInfo);
             }
@@ -321,13 +318,6 @@ public class DomainInfo {
         }
         return removed;
     }
-
-//    private void extend(ClassInfo superclass, List<ClassInfo> subclasses) {
-//        for (ClassInfo subclass : subclasses) {
-//            subclass.extend(superclass);
-//            extend(subclass, subclass.directSubclasses());
-//        }
-//    }
 
     private void implement(ClassInfo implementingClass, io.github.classgraph.ClassInfo interfaceInfo) {
 

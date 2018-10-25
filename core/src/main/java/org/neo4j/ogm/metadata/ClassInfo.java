@@ -20,6 +20,7 @@ import io.github.classgraph.MethodInfo;
 import io.github.classgraph.MethodInfoList;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
@@ -89,7 +90,7 @@ public class ClassInfo {
     private volatile FieldInfo primaryIndexField = null;
     private volatile FieldInfo labelField = null;
     private volatile boolean labelFieldMapped = false;
-    private volatile MethodInfo postLoadMethod;
+    private volatile Method postLoadMethod;
     private boolean primaryIndexFieldChecked = false;
     private Class<?> cls;
     private Class<? extends IdStrategy> idStrategyClass;
@@ -110,8 +111,10 @@ public class ClassInfo {
         methods = scanClassInfo.getMethodInfo();
         fields = scanClassInfo.getFieldInfo();
         annotations = scanClassInfo.getAnnotationInfo();
-        postLoadMethod = findPostLoadMethod(scanClassInfo);
+        postLoadMethod = findPostLoadMethod(scanClassInfo).map(MethodInfo::loadClassAndGetMethod).orElse(null);
         fieldsInfo = new FieldsInfo(this, scanClassInfo);
+
+        neo4jName = assembleNeo4jName();
 
         if (isRelationshipEntity() && labelFieldOrNull() != null) {
             throw new MappingException(
@@ -128,7 +131,7 @@ public class ClassInfo {
         }
     }
 
-    private MethodInfo findPostLoadMethod(io.github.classgraph.ClassInfo scanClassInfo) {
+    private Optional<MethodInfo> findPostLoadMethod(io.github.classgraph.ClassInfo scanClassInfo) {
         // first take a look at all the methods available in this class and check if they are annotated with @PostLoad
 
         List<MethodInfo> possiblePostLoadMethods =
@@ -136,7 +139,7 @@ public class ClassInfo {
                 .collect(Collectors.toList());
 
         if (possiblePostLoadMethods.size() == 1) {
-            return possiblePostLoadMethods.get(0);
+            return Optional.of(possiblePostLoadMethods.get(0));
         }
 
         // looking through all classes in the hierarchy to find a method annotated with postLoad
@@ -149,7 +152,7 @@ public class ClassInfo {
                 // look into the current class again to see if the method is overwritten somewhere
                 MethodInfo methodInfo = possiblePostLoadMethods.get(0);
                 MethodInfoList overwrittenMethodInfo = scanClassInfo.getMethodInfo().get(methodInfo.getName());
-                return overwrittenMethodInfo.get(0);
+                return Optional.of(overwrittenMethodInfo.get(0));
             }
         }
 
@@ -159,7 +162,7 @@ public class ClassInfo {
                 .format("Cannot have more than one post load method annotated with @PostLoad for class '%s'",
                     this.className));
         }
-        return null;
+        return Optional.empty();
     }
 
     private static boolean isDeclaredField(Field[] declaredFields, String name) {
@@ -219,26 +222,28 @@ public class ClassInfo {
     }
 
     public String neo4jName() {
-        if (neo4jName == null) {
-            io.github.classgraph.AnnotationInfo annotationInfo = annotations.get(NodeEntity.class.getName());
-            if (annotationInfo != null) {
-                Object labelValue = annotationInfo.getParameterValues().get(NodeEntity.LABEL);
-                if (labelValue == null) {
-                    labelValue = annotationInfo.getParameterValues().get("value");
-                }
-                neo4jName = labelValue != null ? (String) labelValue : simpleName();
-                return neo4jName;
-            }
-
-            if (isRelationshipEntity()) {
-                neo4jName = getRelationshipType(simpleName().toUpperCase());
-                return neo4jName;
-            }
-            if (!isAbstract) {
-                neo4jName = simpleName();
-            }
-        }
         return neo4jName;
+    }
+
+    private String assembleNeo4jName() {
+        io.github.classgraph.AnnotationInfo annotationInfo = annotations.get(NodeEntity.class.getName());
+
+        if (annotationInfo != null) {
+            Object labelValue = annotationInfo.getParameterValues().get(NodeEntity.LABEL);
+            if (labelValue == null) {
+                labelValue = annotationInfo.getParameterValues().get("value");
+            }
+            return labelValue != null ? (String) labelValue : simpleName();
+
+        }
+
+        if (isRelationshipEntity()) {
+            return getRelationshipType(simpleName().toUpperCase());
+        }
+        if (!isAbstract) {
+            return simpleName();
+        }
+        return null;
     }
 
     private Collection<String> collectLabels() {
@@ -969,7 +974,7 @@ public class ClassInfo {
         }
     }
 
-    public synchronized MethodInfo getPostLoadMethod() {
+    public synchronized Method getPostLoadMethod() {
         return postLoadMethod;
     }
 

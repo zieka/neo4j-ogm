@@ -185,9 +185,8 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
 
     private void executePostLoad(Object instance) {
         ClassInfo classInfo = metadata.classInfo(instance);
-        MethodInfo postLoadMethod = classInfo.getPostLoadMethod();
-        if (postLoadMethod != null) {
-            final Method method = postLoadMethod.loadClassAndGetMethod();
+        Method method = classInfo.getPostLoadMethod();
+        if (method != null) {
             try {
                 if(!method.isAccessible()) {
                     method.setAccessible(true);
