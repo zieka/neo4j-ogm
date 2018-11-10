@@ -14,7 +14,7 @@
 package org.neo4j.ogm.drivers.embedded.driver;
 
 import static java.util.Objects.*;
-import static org.neo4j.ogm.driver.ParameterConversionMode.CONVERT_ALL;
+import static org.neo4j.ogm.driver.ParameterConversionMode.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +42,7 @@ import org.neo4j.ogm.drivers.embedded.transaction.EmbeddedTransaction;
 import org.neo4j.ogm.exception.ConnectionException;
 import org.neo4j.ogm.request.Request;
 import org.neo4j.ogm.transaction.Transaction;
+import org.neo4j.ogm.types.NativeTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,10 +55,13 @@ public class EmbeddedDriver extends AbstractConfigurableDriver {
     private final Logger logger = LoggerFactory.getLogger(EmbeddedDriver.class);
     private static final int TIMEOUT = 60_000;
 
+    public static final NativeTypes NATIVE_TYPES = new EmbeddedNativeTypes();
+
     private GraphDatabaseService graphDatabaseService;
 
     // required for service loader mechanism
-    public EmbeddedDriver() {}
+    public EmbeddedDriver() {
+    }
 
     public EmbeddedDriver(GraphDatabaseService graphDatabaseService) {
         this(graphDatabaseService, Collections::emptyMap);
@@ -66,7 +70,7 @@ public class EmbeddedDriver extends AbstractConfigurableDriver {
     /**
      * Create OGM EmbeddedDriver with provided embedded instance.
      *
-     * @param graphDatabaseService            Preconfigured, embedded instance.
+     * @param graphDatabaseService     Preconfigured, embedded instance.
      * @param customPropertiesSupplier Hook to provide custom configuration properties, i.e. for Cypher modification providers
      */
     public EmbeddedDriver(GraphDatabaseService graphDatabaseService,
@@ -226,5 +230,10 @@ public class EmbeddedDriver extends AbstractConfigurableDriver {
         } catch (IOException | URISyntaxException ioe) {
             throw new RuntimeException(ioe);
         }
+    }
+
+    @Override
+    public NativeTypes getNativeTypes() {
+        return NATIVE_TYPES;
     }
 }
