@@ -13,12 +13,15 @@
 
 package org.neo4j.ogm.config;
 
+import static org.neo4j.ogm.driver.ParameterConversionMode.*;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.ogm.driver.ParameterConversionMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +50,7 @@ public class Configuration {
     private Credentials credentials;
     private Integer connectionLivenessCheckTimeout;
     private Boolean verifyConnection;
+    private Boolean useNativeTypes;
     private Map<String, Object> customProperties;
 
     /**
@@ -70,6 +74,9 @@ public class Configuration {
             "generated_indexes.cql";
         this.neo4jHaPropertiesFile = builder.neo4jHaPropertiesFile;
         this.customProperties = builder.customProperties;
+        this.useNativeTypes = builder.useNativeTypes;
+
+        this.assertNativeTypeRequirements();
 
         if (this.uri != null) {
             java.net.URI uri = null;
@@ -97,6 +104,24 @@ public class Configuration {
             }
             credentials = new UsernamePasswordCredentials(builder.username, builder.password);
         }
+    }
+
+    /**
+     * Asserts additional requirements for the native type support, i.e. using the "modern" parameter conversion.
+     */
+    private void assertNativeTypeRequirements() {
+
+        if(!this.useNativeTypes)
+            return;
+
+        ParameterConversionMode currentParameterConversionMode = (ParameterConversionMode) this.customProperties
+            .get(CONFIG_PARAMETER_CONVERSION_MODE);
+
+        if(currentParameterConversionMode != null && currentParameterConversionMode != CONVERT_NON_NATIVE_ONLY) {
+            throw new IllegalStateException("Cannot use native types, parameter conversion mode has been explicitly set to " + CONVERT_ALL);
+        }
+
+        this.customProperties.put(CONFIG_PARAMETER_CONVERSION_MODE, CONVERT_NON_NATIVE_ONLY);
     }
 
     public AutoIndexMode getAutoIndex() {
@@ -157,6 +182,10 @@ public class Configuration {
 
     public Map<String, Object> getCustomProperties() {
         return Collections.unmodifiableMap(customProperties);
+    }
+
+    public Boolean getUseNativeTypes() {
+        return useNativeTypes;
     }
 
     @Override
@@ -264,6 +293,7 @@ public class Configuration {
         private String neo4jHaPropertiesFile;
         private String username;
         private String password;
+        private boolean useNativeTypes;
         private Map<String, Object> customProperties = new HashMap<>();
 
         /**
@@ -437,6 +467,25 @@ public class Configuration {
 
         public Builder withCustomProperty(String name, Object value) {
             this.customProperties.put(name, value);
+            return this;
+        }
+
+        /**
+         * Turns on the support for native types on the transport level. All types supported natively by Neo4j will either
+         * be transported "as is" to the database or in a format that will be stored in the native form in the database.
+         * <br />
+         * Turning this on prevents implicit conversions of all <code>java.time.*</code> types, Neo4j spatial datatypes
+         * (<code>point()</code>) and potentially others in the future.
+         * <br />
+         * Be aware that turning this on in an application that used the implicit conversion and stored nodes and properties
+         * with it, will require a refactoring to the database for all <code>java.time.*</code>-properties stored through
+         * Neo4j-OGM: They have been stored traditionally as a string in an ISO-8601 format and need to be converted in the
+         * database to their native representation as well.
+         *
+         * @since 3.2
+         */
+        public Builder useNativeTypes() {
+            this.useNativeTypes = true;
             return this;
         }
 
