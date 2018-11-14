@@ -14,7 +14,6 @@
 package org.neo4j.ogm.drivers.embedded.driver;
 
 import static java.util.Objects.*;
-import static org.neo4j.ogm.driver.ParameterConversionMode.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,14 +34,11 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.ogm.config.Configuration;
 import org.neo4j.ogm.driver.AbstractConfigurableDriver;
-import org.neo4j.ogm.driver.ParameterConversion;
-import org.neo4j.ogm.driver.ParameterConversionMode;
 import org.neo4j.ogm.drivers.embedded.request.EmbeddedRequest;
 import org.neo4j.ogm.drivers.embedded.transaction.EmbeddedTransaction;
 import org.neo4j.ogm.exception.ConnectionException;
 import org.neo4j.ogm.request.Request;
 import org.neo4j.ogm.transaction.Transaction;
-import org.neo4j.ogm.driver.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,8 +57,8 @@ public class EmbeddedDriver extends AbstractConfigurableDriver {
     public EmbeddedDriver() {
     }
 
-    public EmbeddedDriver(GraphDatabaseService graphDatabaseService) {
-        this(graphDatabaseService, Collections::emptyMap);
+    public EmbeddedDriver(GraphDatabaseService graphDatabaseService, Configuration configuration) {
+        this(graphDatabaseService, configuration, Collections::emptyMap);
     }
 
     /**
@@ -72,9 +68,13 @@ public class EmbeddedDriver extends AbstractConfigurableDriver {
      * @param customPropertiesSupplier Hook to provide custom configuration properties, i.e. for Cypher modification providers
      */
     public EmbeddedDriver(GraphDatabaseService graphDatabaseService,
-        Supplier<Map<String, Object>> customPropertiesSupplier) {
+        Configuration configuration,
+        Supplier<Map<String, Object>> customPropertiesSupplier
+    ) {
 
         super(customPropertiesSupplier);
+
+        super.configure(configuration);
 
         this.graphDatabaseService = requireNonNull(graphDatabaseService);
         boolean available = this.graphDatabaseService.isAvailable(TIMEOUT);
