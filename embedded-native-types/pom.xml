@@ -15,18 +15,17 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>neo4j-ogm</artifactId>
-        <groupId>org.neo4j</groupId>
-        <version>3.1.5-Spatial-Support-SNAPSHOT</version>
-    </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>neo4j-ogm-embedded-driver</artifactId>
+    <parent>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-ogm</artifactId>
+        <version>3.1.5-Spatial-Support-SNAPSHOT</version>
+    </parent>
 
-    <properties>
-        <java-module-name>org.neo4j.ogm.drivers.embedded</java-module-name>
-    </properties>
+    <groupId>org.neo4j</groupId>
+    <artifactId>neo4j-ogm-embedded-native-types</artifactId>
+    <version>3.1.5-Spatial-Support-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -37,40 +36,19 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-ogm-core</artifactId>
-            <version>3.1.5-Spatial-Support-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
             <artifactId>neo4j</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.neo4j.app</groupId>
-            <artifactId>neo4j-server</artifactId>
-            <version>${neo4j}</version>
-            <optional>true</optional>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cluster</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-ha</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-enterprise</artifactId>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

@@ -55,8 +55,6 @@ public class EmbeddedDriver extends AbstractConfigurableDriver {
     private final Logger logger = LoggerFactory.getLogger(EmbeddedDriver.class);
     private static final int TIMEOUT = 60_000;
 
-    public static final TypeSystem NATIVE_TYPES = new EmbeddedNativeTypes();
-
     private GraphDatabaseService graphDatabaseService;
 
     // required for service loader mechanism
@@ -86,12 +84,12 @@ public class EmbeddedDriver extends AbstractConfigurableDriver {
     }
 
     @Override
-    public synchronized void configure(Configuration config) {
+    public synchronized void configure(Configuration configuration) {
 
-        super.configure(config);
+        super.configure(configuration);
 
         try {
-            String fileStoreUri = config.getURI();
+            String fileStoreUri = configuration.getURI();
 
             // if no URI is set, create a temporary folder for the graph db
             // that will persist only for the duration of the JVM
@@ -108,7 +106,7 @@ public class EmbeddedDriver extends AbstractConfigurableDriver {
             }
 
             // do we want to start a HA instance or a community instance?
-            String haPropertiesFileName = config.getNeo4jHaPropertiesFile();
+            String haPropertiesFileName = configuration.getNeo4jHaPropertiesFile();
             if (haPropertiesFileName != null) {
                 setHAGraphDatabase(file,
                     Thread.currentThread().getContextClassLoader().getResource(haPropertiesFileName));
@@ -118,6 +116,11 @@ public class EmbeddedDriver extends AbstractConfigurableDriver {
         } catch (Exception e) {
             throw new ConnectionException("Error connecting to embedded graph", e);
         }
+    }
+
+    @Override
+    protected String getTypeSystemName() {
+        return "org.neo4j.ogm.drivers.embedded.types.EmbeddedNativeTypes";
     }
 
     private void setHAGraphDatabase(File file, URL propertiesFileURL) {
@@ -154,21 +157,7 @@ public class EmbeddedDriver extends AbstractConfigurableDriver {
     @Override
     public Request request() {
         return new EmbeddedRequest(graphDatabaseService, transactionManager,
-            getParameterConversion(), getCypherModification());
-    }
-
-    private ParameterConversion getParameterConversion() {
-
-        ParameterConversionMode mode = (ParameterConversionMode) customPropertiesSupplier.get()
-            .getOrDefault(ParameterConversionMode.CONFIG_PARAMETER_CONVERSION_MODE, CONVERT_ALL);
-        switch (mode) {
-            case CONVERT_ALL:
-                return AbstractConfigurableDriver.CONVERT_ALL_PARAMETERS_CONVERSION;
-            case CONVERT_NON_NATIVE_ONLY:
-                return EmbeddedBasedParameterConversion.INSTANCE;
-            default:
-                throw new IllegalStateException("Unsupported conversion mode: " + mode.name() + " for Bolt-Transport.");
-        }
+            new EmbeddedEntityAdapter(typeSystem), getCypherModification());
     }
 
     private org.neo4j.graphdb.Transaction nativeTransaction() {
@@ -230,10 +219,5 @@ public class EmbeddedDriver extends AbstractConfigurableDriver {
         } catch (IOException | URISyntaxException ioe) {
             throw new RuntimeException(ioe);
         }
-    }
-
-    @Override
-    public TypeSystem getTypeSystem() {
-        return NATIVE_TYPES;
     }
 }
