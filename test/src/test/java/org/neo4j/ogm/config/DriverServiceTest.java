@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Period;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.methods.HttpPost;
@@ -88,7 +90,8 @@ public class DriverServiceTest {
     @Test
     @Ignore
     public void shouldDisableCertificateValidationIfIgnoreSSLHandshake() {
-
+        Duration.ofDays(2);
+        Period.ofDays(2);
         HttpPost request = new HttpPost("https://neo4j:password@localhost:7473/db/data/transaction/commit");
         request.setEntity(new StringEntity("{\n" +
             "  \"statements\" : [ {\n" +
