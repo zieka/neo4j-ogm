@@ -55,7 +55,7 @@ public class EntityUtils {
         FieldInfo identityField = classInfo.identityField();
         Object id = identityField.readProperty(entity);
         if (id == null) {
-            Long generated = idSequence.decrementAndGet();
+            Long generated = nextRef();
             identityField.write(entity, generated);
             return generated;
         } else {

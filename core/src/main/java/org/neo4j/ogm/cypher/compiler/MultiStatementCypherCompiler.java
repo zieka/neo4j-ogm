@@ -305,7 +305,7 @@ public class MultiStatementCypherCompiler implements Compiler {
     private Map<String, Set<Node>> groupNodesByLabel(List<NodeBuilder> nodeBuilders) {
         return nodeBuilders.stream()
             .map(NodeBuilder::node)
-            .collect(groupingBy(Node::labelSignature, Collectors.mapping(Function.identity(), Collectors.toSet())));
+            .collect(groupingBy(Node::labelSignature, Collectors.toSet()));
     }
 
     private Map<String, Set<Edge>> groupRelationshipsByType(List<RelationshipBuilder> relationshipBuilders) {
