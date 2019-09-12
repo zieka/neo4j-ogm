@@ -71,10 +71,11 @@ import org.slf4j.LoggerFactory;
  * @author Luanne Misquitta
  * @author Mihai Raulea
  * @author Mark Angrish
+ * @author Michael J. Simons
  */
 public class Neo4jSession implements Session {
 
-    private final Logger logger = LoggerFactory.getLogger(Neo4jSession.class);
+    public static final Logger LOGGER = LoggerFactory.getLogger(Neo4jSession.class);
 
     private final MetaData metaData;
     private final MappingContext mappingContext;
@@ -140,7 +141,7 @@ public class Neo4jSession implements Session {
                     eventListener.onPostDelete(event);
                     break;
                 default:
-                    logger.warn("Event not recognised: {}", event);
+                    LOGGER.warn("Event not recognised: {}", event);
             }
         }
     }
@@ -582,13 +583,13 @@ public class Neo4jSession implements Session {
             }
             return result;
         } catch (CypherException e) {
-            logger.warn("Error executing query : {} - {}. Rolling back transaction.", e.getCode(), e.getDescription());
+            LOGGER.warn("Error executing query : {} - {}. Rolling back transaction.", e.getCode(), e.getDescription());
             if (transactionManager().canRollback()) {
                 transaction.rollback();
             }
             throw e;
         } catch (Throwable e) {
-            logger.warn("Error executing query : {}. Rolling back transaction.", e.getMessage());
+            LOGGER.warn("Error executing query : {}. Rolling back transaction.", e.getMessage());
             if(transactionManager().canRollback()) {
                 transaction.rollback();
             }
@@ -675,11 +676,11 @@ public class Neo4jSession implements Session {
     }
 
     public void warn(String msg) {
-        logger.warn("Thread {}: {}", Thread.currentThread().getId(), msg);
+        LOGGER.warn("Thread {}: {}", Thread.currentThread().getId(), msg);
     }
 
     public void debug(String msg) {
-        logger.debug("Thread {}: {}", Thread.currentThread().getId(), msg);
+        LOGGER.debug("Thread {}: {}", Thread.currentThread().getId(), msg);
     }
 
     @Override

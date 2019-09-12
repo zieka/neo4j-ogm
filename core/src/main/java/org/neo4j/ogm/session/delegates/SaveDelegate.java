@@ -89,6 +89,10 @@ public class SaveDelegate extends SessionDelegate {
             objects.forEach(item -> entityGraphMapper.map(item, depth));
             requestExecutor.executeSave(entityGraphMapper.compileContext());
         }
+
+        if (Neo4jSession.LOGGER.isTraceEnabled()) {
+            Neo4jSession.LOGGER.trace("Mapping context after save:{}{}", System.lineSeparator(), session.context());
+        }
     }
 
     public void addWriteProtection(WriteProtectionTarget target, Predicate<Object> protection) {

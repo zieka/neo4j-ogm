@@ -549,4 +549,25 @@ public class MappingContext {
             primaryIndexField.writeDirect(entity, id);
         }
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        if (primaryIdToNativeId.isEmpty()) {
+            sb.append("MappingContext contains no primary id to native id mappings");
+        } else {
+            sb.append("Primary id to native id mappings:");
+            sb.append(System.lineSeparator()).append(
+                primaryIdToNativeId.entrySet().stream().map(e -> String.format("\t%s -> %s", e.getKey(), e.getValue()))
+                    .collect(Collectors.joining(System.lineSeparator())));
+
+            HashSet<Long> hlp = new HashSet<>(primaryIdToNativeId.values());
+            if (hlp.size() < primaryIdToNativeId.size()) {
+                sb.append(System.lineSeparator())
+                    .append("One or more primary ids point to the same native id!");
+            }
+        }
+
+        return sb.toString();
+    }
 }
