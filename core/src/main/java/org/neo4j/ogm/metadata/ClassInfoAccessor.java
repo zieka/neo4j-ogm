@@ -20,21 +20,29 @@ package org.neo4j.ogm.metadata;
 
 import static org.neo4j.ogm.metadata.DomainInfoUtils.*;
 
+import io.github.classgraph.AnnotationClassRef;
 import io.github.classgraph.AnnotationParameterValueList;
 import io.github.classgraph.ClassInfo;
+import io.github.classgraph.FieldInfo;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.ogm.annotation.GeneratedValue;
+import org.neo4j.ogm.annotation.Id;
 import org.neo4j.ogm.annotation.Labels;
 import org.neo4j.ogm.annotation.NodeEntity;
 import org.neo4j.ogm.annotation.RelationshipEntity;
+import org.neo4j.ogm.exception.core.MetadataException;
+import org.neo4j.ogm.id.InternalIdStrategy;
 
 /**
  * Provides a view on ClassGraphs {@link ClassInfo} and access to all informations necessary for OGM.
@@ -50,6 +58,8 @@ public final class ClassInfoAccessor {
 
     private final Set<String> staticLabels;
 
+    private final FieldInfo identityField;
+
     public ClassInfoAccessor(ClassInfo classInfo) {
 
         if (classInfo == null) {
@@ -59,6 +69,8 @@ public final class ClassInfoAccessor {
 
         this.neo4jName = generateNeo4jName(classInfo);
         this.staticLabels = computeStaticLabels(classInfo);
+
+        this.identityField = findIdentityField(classInfo);
     }
 
     /**
@@ -93,6 +105,13 @@ public final class ClassInfoAccessor {
      */
     public Collection<String> getStaticLabels() {
         return staticLabels;
+    }
+
+    /**
+     * @return The optional identity field for the domain class.
+     */
+    public Optional<FieldInfo> getIdentityField() {
+        return Optional.ofNullable(identityField);
     }
 
     private static String generateNeo4jName(ClassInfo classInfo) {
@@ -145,5 +164,36 @@ public final class ClassInfoAccessor {
             .map(ClassInfoAccessor::generateNeo4jName)
             .filter(Objects::nonNull)
             .collect(Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
+    }
+
+    private static FieldInfo findIdentityField(ClassInfo classInfo) {
+
+        List<FieldInfo> possibleIdentityFields = classInfo.getFieldInfo().stream()
+            .filter(ClassInfoAccessor::isInternalIdentity)
+            .collect(Collectors.toList());
+
+        if (possibleIdentityFields.size() == 1) {
+            return possibleIdentityFields.get(0);
+        } else if (possibleIdentityFields.size() > 1) {
+            throw new MetadataException("Expected exactly one internal identity field (@Id with " +
+                "InternalIdStrategy), found " + possibleIdentityFields.size() + " " + possibleIdentityFields);
+        } else {
+            return classInfo.getFieldInfo().stream()
+                .filter(ClassInfoAccessor::isFieldNamedIdOfTypeLong)
+                .findFirst()
+                .orElse(null);
+        }
+    }
+
+    private static boolean isInternalIdentity(FieldInfo fieldInfo) {
+
+        return fieldInfo.hasAnnotation(Id.class.getName()) && fieldInfo.hasAnnotation(GeneratedValue.class.getName()) &&
+            ((AnnotationClassRef) fieldInfo.getAnnotationInfo(GeneratedValue.class.getName()).getParameterValues()
+                .getValue("strategy")).getName().equals(InternalIdStrategy.class.getName());
+    }
+
+    private static boolean isFieldNamedIdOfTypeLong(FieldInfo fieldInfo) {
+
+        return "id".equals(fieldInfo.getName()) && "java.lang.Long".equals(fieldInfo.getTypeDescriptor().toString());
     }
 }
