@@ -27,7 +27,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.ogm.domain.annotations.ids.ValidAnnotations;
-import org.neo4j.ogm.domain.invalid.ids.InvalidAnnotations;
+import org.neo4j.ogm.invalid_mappings.ids.InvalidAnnotations;
 import org.neo4j.ogm.exception.core.MappingException;
 import org.neo4j.ogm.id.IdStrategy;
 import org.neo4j.ogm.session.Session;
@@ -36,6 +36,7 @@ import org.neo4j.ogm.testutil.MultiDriverTestClass;
 
 /**
  * @author Frantisek Hartman
+ * @author Michael J. Simons
  */
 public class IdGenerationTest extends MultiDriverTestClass {
 
@@ -69,7 +70,7 @@ public class IdGenerationTest extends MultiDriverTestClass {
     }
 
     @Test
-    public void saveInternalIdWithAnnotation() throws Exception {
+    public void saveInternalIdWithAnnotation() {
         ValidAnnotations.InternalIdWithAnnotation entity = new ValidAnnotations.InternalIdWithAnnotation();
         session.save(entity);
 
@@ -174,7 +175,7 @@ public class IdGenerationTest extends MultiDriverTestClass {
     }
 
     @Test
-    public void saveWithCustomStrategyGeneratesId() throws Exception {
+    public void saveWithCustomStrategyGeneratesId() {
         ValidAnnotations.WithCustomIdStrategy entity = new ValidAnnotations.WithCustomIdStrategy();
         session.save(entity);
 
@@ -189,7 +190,7 @@ public class IdGenerationTest extends MultiDriverTestClass {
     }
 
     @Test
-    public void saveWithContextIdStrategy() throws Exception {
+    public void saveWithContextIdStrategy() {
         CustomInstanceIdStrategy strategy = new CustomInstanceIdStrategy("test-custom-instance-id");
         sessionFactory.register(strategy);
 
@@ -206,7 +207,7 @@ public class IdGenerationTest extends MultiDriverTestClass {
     }
 
     @Test(expected = MappingException.class)
-    public void saveWithCustomInstanceIdStrategyWhenStrategyNotRegistered() throws Exception {
+    public void saveWithCustomInstanceIdStrategyWhenStrategyNotRegistered() {
         // create new session factory without registered instance of the strategy
         sessionFactory = new SessionFactory(driver, "org.neo4j.ogm.domain.annotations.ids");
         session = sessionFactory.openSession();
@@ -216,7 +217,7 @@ public class IdGenerationTest extends MultiDriverTestClass {
     }
 
     @Test
-    public void saveRelationshipEntityWithId() throws Exception {
+    public void saveRelationshipEntityWithId() {
         ValidAnnotations.IdAndGenerationType b1 = new ValidAnnotations.IdAndGenerationType();
         ValidAnnotations.IdAndGenerationType b2 = new ValidAnnotations.IdAndGenerationType();
         ValidAnnotations.RelationshipEntityWithId rel = new ValidAnnotations.RelationshipEntityWithId(b1, b2, 100);
@@ -236,14 +237,14 @@ public class IdGenerationTest extends MultiDriverTestClass {
     }
 
     @Test
-    public void shouldRejectSavingEntityWithoutId() throws Exception {
+    public void shouldRejectSavingEntityWithoutId() {
         assertThatThrownBy(() -> session.save(new InvalidAnnotations.NeitherGraphIdOrId()))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("is not a valid entity class");
     }
 
     @Test
-    public void shouldRejectDeletingEntityWithoutId() throws Exception {
+    public void shouldRejectDeletingEntityWithoutId() {
         assertThatThrownBy(() -> session.delete(new InvalidAnnotations.NeitherGraphIdOrId()))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("is not a valid entity class");

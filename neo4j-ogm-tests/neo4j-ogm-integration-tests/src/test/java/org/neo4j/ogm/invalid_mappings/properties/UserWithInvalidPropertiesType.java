@@ -16,21 +16,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.ogm.domain.autoindex.invalid;
+package org.neo4j.ogm.invalid_mappings.properties;
 
-import org.neo4j.ogm.annotation.CompositeIndex;
+import java.util.List;
+
 import org.neo4j.ogm.annotation.NodeEntity;
+import org.neo4j.ogm.annotation.Properties;
 
 /**
  * @author Frantisek Hartman
  */
-@NodeEntity(label = "Entity")
-@CompositeIndex({ "name", "ag" })
-public class WrongPropertyCompositeIndexEntity {
+@NodeEntity
+public class UserWithInvalidPropertiesType {
 
-    Long id;
+    private Long id;
 
-    String name;
+    @Properties
+    List<String> properties;
 
-    int age;
 }

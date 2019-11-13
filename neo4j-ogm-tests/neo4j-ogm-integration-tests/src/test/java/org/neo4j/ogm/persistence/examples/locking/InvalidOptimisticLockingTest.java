@@ -19,7 +19,7 @@
 package org.neo4j.ogm.persistence.examples.locking;
 
 import org.junit.Test;
-import org.neo4j.ogm.domain.lockinginvalid.MultipleVersionFields;
+import org.neo4j.ogm.invalid_mappings.lockinginvalid.MultipleVersionFields;
 import org.neo4j.ogm.exception.core.MetadataException;
 import org.neo4j.ogm.session.Session;
 import org.neo4j.ogm.session.SessionFactory;

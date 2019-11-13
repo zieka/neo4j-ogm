@@ -20,42 +20,47 @@ package org.neo4j.ogm.metadata;
 
 import org.junit.Test;
 import org.neo4j.ogm.domain.annotations.ids.ValidAnnotations;
-import org.neo4j.ogm.domain.invalid.ids.InvalidAnnotations;
+import org.neo4j.ogm.invalid_mappings.ids.InvalidAnnotations;
 import org.neo4j.ogm.exception.core.MetadataException;
 
+/**
+ * @author Frantisek Hartman
+ * @author Gerrit Meier
+ * @author Michael J. Simons
+ */
 public class InvalidIdAnnotationTest {
 
     private MetaData metaData;
 
     @Test(expected = MetadataException.class)
-    public void shouldRejectTwoIdsOnSameClass() throws Exception {
+    public void shouldRejectTwoIdsOnSameClass() {
         createMetadataAndCheckIdentityField(InvalidAnnotations.TwoIdsOnSameClass.class.getName());
     }
 
     @Test(expected = MetadataException.class)
-    public void shouldRejectNeitherGraphIdOrId() throws Exception {
+    public void shouldRejectNeitherGraphIdOrId() {
         createMetadataAndCheckIdentityField(InvalidAnnotations.NeitherGraphIdOrId.class.getName());
     }
 
     @Test(expected = MetadataException.class)
-    public void shouldRejectBothIdAndPrimaryIndexOnDifferentProperty() throws Exception {
+    public void shouldRejectBothIdAndPrimaryIndexOnDifferentProperty() {
         createMetadataAndCheckIdentityField(
             InvalidAnnotations.BothIdAndPrimaryIndexOnDifferentProperty.class.getName());
     }
 
     @Test(expected = MetadataException.class)
-    public void shouldRejectChildHasPrimaryIndexExtendsAndParentHasId() throws Exception {
+    public void shouldRejectChildHasPrimaryIndexExtendsAndParentHasId() {
         metaData = new MetaData(ValidAnnotations.Basic.class.getName(),
             InvalidAnnotations.ChildHasPrimaryIndexExtendsAndParentHasId.class.getName());
     }
 
     @Test(expected = MetadataException.class)
-    public void shouldRejectUuidGenerationStrategyWithIdTypeNotUuid() throws Exception {
+    public void shouldRejectUuidGenerationStrategyWithIdTypeNotUuid() {
         createMetadataAndCheckIdentityField(InvalidAnnotations.UuidGenerationStrategyWithIdTypeNotUuid.class.getName());
     }
 
     @Test(expected = MetadataException.class)
-    public void shouldRejectGeneratedValueWithoutID() throws Exception {
+    public void shouldRejectGeneratedValueWithoutID() {
         createMetadataAndCheckIdentityField(InvalidAnnotations.GeneratedValueWithoutID.class.getName());
     }
 
@@ -63,5 +68,4 @@ public class InvalidIdAnnotationTest {
         metaData = new MetaData(name);
         metaData.classInfo(name).identityField();
     }
-
 }

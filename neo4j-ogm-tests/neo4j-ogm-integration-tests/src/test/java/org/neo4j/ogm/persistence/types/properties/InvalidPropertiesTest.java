@@ -19,7 +19,7 @@
 package org.neo4j.ogm.persistence.types.properties;
 
 import org.junit.Test;
-import org.neo4j.ogm.domain.properties.UserWithInvalidPropertiesType;
+import org.neo4j.ogm.invalid_mappings.properties.UserWithInvalidPropertiesType;
 import org.neo4j.ogm.exception.core.MappingException;
 import org.neo4j.ogm.session.Session;
 import org.neo4j.ogm.session.SessionFactory;
@@ -30,13 +30,14 @@ import org.neo4j.ogm.testutil.MultiDriverTestClass;
  * {@link MappingException}
  *
  * @author Frantisek Hartman
+ * @author Michael J. Simons
  */
 public class InvalidPropertiesTest extends MultiDriverTestClass {
 
     private static Session session;
 
     @Test(expected = MappingException.class)
-    public void shouldThrowInvalidMappingException() throws Exception {
+    public void shouldThrowInvalidMappingException() {
         session = new SessionFactory(driver,
             UserWithInvalidPropertiesType.class.getName())
             .openSession();

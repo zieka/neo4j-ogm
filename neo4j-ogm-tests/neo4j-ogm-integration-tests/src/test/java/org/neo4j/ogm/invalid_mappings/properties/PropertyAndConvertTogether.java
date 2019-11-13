@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.ogm.domain.props;
+package org.neo4j.ogm.invalid_mappings.properties;
 
 import org.neo4j.ogm.annotation.GeneratedValue;
 import org.neo4j.ogm.annotation.Id;
@@ -25,6 +25,10 @@ import org.neo4j.ogm.annotation.typeconversion.Convert;
 import org.neo4j.ogm.domain.restaurant.Location;
 import org.neo4j.ogm.domain.restaurant.LocationConverter;
 
+/**
+ * @author Jasper Blues
+ * @author Michael J. Simons
+ */
 public class PropertyAndConvertTogether {
 
     @Id @GeneratedValue

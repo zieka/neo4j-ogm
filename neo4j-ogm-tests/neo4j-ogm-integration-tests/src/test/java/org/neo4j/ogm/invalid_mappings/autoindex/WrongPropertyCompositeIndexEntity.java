@@ -16,22 +16,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.ogm.domain.lockinginvalid;
+package org.neo4j.ogm.invalid_mappings.autoindex;
 
+import org.neo4j.ogm.annotation.CompositeIndex;
 import org.neo4j.ogm.annotation.NodeEntity;
-import org.neo4j.ogm.annotation.Version;
 
 /**
  * @author Frantisek Hartman
+ * @author Michael J. Simons
  */
-@NodeEntity
-public class MultipleVersionFields {
+@NodeEntity(label = "Entity")
+@CompositeIndex({ "name", "ag" })
+public class WrongPropertyCompositeIndexEntity {
 
     Long id;
 
-    @Version
-    Long version;
+    String name;
 
-    @Version
-    Long anotherVersion;
+    int age;
 }

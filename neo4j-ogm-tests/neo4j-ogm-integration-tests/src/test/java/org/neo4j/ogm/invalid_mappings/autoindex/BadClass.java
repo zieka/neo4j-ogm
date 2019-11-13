@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.ogm.domain.autoindex.invalid;
+package org.neo4j.ogm.invalid_mappings.autoindex;
 
 import org.neo4j.ogm.annotation.GeneratedValue;
 import org.neo4j.ogm.annotation.Id;
@@ -24,6 +24,7 @@ import org.neo4j.ogm.annotation.Index;
 
 /**
  * @author Mark Angrish
+ * @author Michael J. Simons
  */
 public class BadClass {
 

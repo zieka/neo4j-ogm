@@ -16,22 +16,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.ogm.domain.properties;
-
-import java.util.List;
+package org.neo4j.ogm.invalid_mappings.lockinginvalid;
 
 import org.neo4j.ogm.annotation.NodeEntity;
-import org.neo4j.ogm.annotation.Properties;
+import org.neo4j.ogm.annotation.Version;
 
 /**
  * @author Frantisek Hartman
  */
 @NodeEntity
-public class UserWithInvalidPropertiesType {
+public class MultipleVersionFields {
 
-    private Long id;
+    Long id;
 
-    @Properties
-    List<String> properties;
+    @Version
+    Long version;
 
+    @Version
+    Long anotherVersion;
 }

@@ -21,20 +21,26 @@ package org.neo4j.ogm.metadata;
 import static org.assertj.core.api.Assertions.*;
 
 import org.junit.Test;
-import org.neo4j.ogm.domain.props.PropertyAndConvertTogether;
+import org.neo4j.ogm.invalid_mappings.properties.PropertyAndConvertTogether;
 import org.neo4j.ogm.exception.core.MappingException;
 
+/**
+ * @author Jasper Blues
+ * @author Frantisek Hartman
+ * @author Gerrit Meier
+ * @author Michael J. Simons
+ */
 public class ClassValidatorTest {
 
     @Test
     public void throwsExceptionWhenPropertyAndConvertTogether() {
         try {
-            MetaData metaData = new MetaData("org.neo4j.ogm.domain.props");
+            MetaData metaData = new MetaData("org.neo4j.ogm.invalid_mappings.properties");
             metaData.classInfo(PropertyAndConvertTogether.class.getSimpleName());
             fail("Should have thrown exception");
         } catch (MappingException e) {
             assertThat(e.getMessage().startsWith(
-                "'org.neo4j.ogm.domain.props.PropertyAndConvertTogether' has both @Convert and @Property annotations applied to the field 'location'"))
+                "'org.neo4j.ogm.invalid_mappings.properties.PropertyAndConvertTogether' has both @Convert and @Property annotations applied to the field 'location'"))
                 .isTrue();
         }
     }
