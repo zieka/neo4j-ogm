@@ -533,7 +533,6 @@ public class MappingContext {
         Iterator<MappedRelationship> it = this.relationshipRegister.iterator();
         while (it.hasNext()) {
             MappedRelationship r = it.next();
-
             // Not touched by a stale node
             if (!staleNodeIds.contains(r.getStartNodeId()) && !staleNodeIds.contains(r.getEndNodeId())) {
                 continue;

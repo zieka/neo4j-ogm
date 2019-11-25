@@ -79,6 +79,7 @@ public class CypherContext implements CompileContext {
 
     public void registerRelationship(Mappable mappedRelationship) {
         this.registeredRelationships.add(mappedRelationship);
+        this.deletedRelationships.remove(mappedRelationship);
     }
 
     public boolean removeRegisteredRelationship(Mappable mappedRelationship) {
@@ -214,7 +215,6 @@ public class CypherContext implements CompileContext {
 
         this.deletedRelationships.addAll(boundForDeletion);
         boolean aCandidateMarkedForDeletion = !boundForDeletion.isEmpty();
-
         return !existsInGraph || aCandidateMarkedForDeletion;
     }
 
@@ -252,10 +252,6 @@ public class CypherContext implements CompileContext {
         return deletedRelationships;
     }
 
-    @Override
-    public Object getVisitedObject(Long reference) {
-        return visitedObjects.get(reference);
-    }
 
     @Override
     public Collection<Object> getTransientRelationships(SrcTargetKey srcTargetKey) {

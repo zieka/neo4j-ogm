@@ -24,7 +24,6 @@ import org.neo4j.ogm.model.Edge;
  * Builds a relationship to be persisted in the database
  *
  * @author Luanne Misquitta
- * @author Michael J. Simons
  */
 public interface RelationshipBuilder extends PropertyContainerBuilder<RelationshipBuilder> {
 

@@ -18,7 +18,6 @@
  */
 package org.neo4j.ogm.domain.gh613;
 
-import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.ogm.annotation.Index;
@@ -50,6 +49,13 @@ public class Node extends BaseEntity {
     protected Node belongsTo;
 
     public Node() {
+    }
+
+    @Override public String toString() {
+        return "Node{" +
+            "nodeId='" + nodeId + '\'' +
+            ", id=" + getId() +
+            '}';
     }
 
     public Node(String nodeId) {
@@ -91,28 +97,10 @@ public class Node extends BaseEntity {
         return this;
     }
 
-    public Node setChildOfBidirectional(Node newParent) {
-        Node currentParent = this.getChildOf();
-        if (newParent == currentParent) {
-            return currentParent;
-        }
-        if (currentParent != null
-            && currentParent.getChildNodes() != null
-            && !currentParent.getChildNodes().isEmpty()) {
-            // updating both sides of the bidirectional mapping
-            // this is to workaround this issue https://github.com/neo4j/neo4j-ogm/issues/591
-            currentParent.getChildNodes().remove(this);
-        }
-        if (newParent != null) {
-            if (newParent.getChildNodes() == null) {
-                newParent.setChildNodes(new HashSet<>());
-            }
-            newParent.getChildNodes().add(this);
-        }
-        this.childOf = newParent;
-        return currentParent;
+    public Node setChildOf(Node childOf) {
+        this.childOf = childOf;
+        return this;
     }
-
 
     public void setBelongsTo(Node belongsTo) {
         this.belongsTo = belongsTo;

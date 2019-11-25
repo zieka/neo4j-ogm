@@ -20,6 +20,7 @@ package org.neo4j.ogm.cypher.compiler;
 
 import static org.assertj.core.api.Assertions.*;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -58,7 +59,7 @@ public class SavingTest extends TestContainersTestBase {
         session.query(TestUtils.readCQLFile("org/neo4j/ogm/cql/gh613.cql").toString(), Collections.emptyMap());
     }
 
-    @Test // GH-613
+    @Test
     public void testSaveParentAfterChild() {
 
         Node loc1_1 = queryNode("loc1_1");
@@ -67,8 +68,7 @@ public class SavingTest extends TestContainersTestBase {
         session.save(loc1_1);
 
         Node loc1 = queryNode("loc1");
-        assertThat(loc1.getChildNodes()).hasSize(3)
-            .first().extracting(Node::getNodeType).isNull(); // The thing hasn't been initialized on purpose, see below
+        assertThat(loc1.getChildNodes()).hasSize(3);
         assertThat(loc1.getNodeType()).isNotNull();
         session.save(loc1);
 
@@ -83,12 +83,9 @@ public class SavingTest extends TestContainersTestBase {
         Node loc1_1 = queryNode("loc1_1");
         Node loc1_2 = queryNode("loc1_2");
 
-        Node oldParentOfLoc1_1 = loc1_1.setChildOfBidirectional(loc2);
-        session.save(loc1_1);
-        session.save(oldParentOfLoc1_1);
-        Node oldParentOfLoc1_2 = loc1_2.setChildOfBidirectional(loc2);
-        session.save(loc1_2);
-        session.save(oldParentOfLoc1_2);
+        loc1_1.setChildOf(loc2);
+        loc1_2.setChildOf(loc2);
+        session.save(Arrays.asList(loc1_1, loc1_2));
 
         Node loc1 = queryNode("loc1");
         assertThat(loc1.getChildNodes()).hasSize(1);
@@ -122,9 +119,7 @@ public class SavingTest extends TestContainersTestBase {
         Node company2 = queryNode("company2");
         Node loc2 = queryNode("loc2");
 
-        Node oldParent = m1.setChildOfBidirectional(loc2);
-        session.save(m1);
-        session.save(oldParent);
+        m1.setChildOf(loc2);
         m1.setBelongsTo(company2);
         session.save(m1);
 
@@ -144,7 +139,7 @@ public class SavingTest extends TestContainersTestBase {
 
     private Node queryNode(String nodeId) {
         Collection<Node> nodeTypes = session
-            .loadAll(Node.class, new Filters(new Filter("nodeId", ComparisonOperator.EQUALS, nodeId)), 1);
+            .loadAll(Node.class, new Filters(new Filter("nodeId", ComparisonOperator.EQUALS, nodeId)));
         assertThat(nodeTypes).hasSize(1);
         return nodeTypes.iterator().next();
     }

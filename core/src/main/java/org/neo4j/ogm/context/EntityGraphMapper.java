@@ -166,7 +166,17 @@ public class EntityGraphMapper implements EntityMapper {
             mapEntity(entity, horizon);
         }
 
+        for (MappedRelationship mappedRelationship : mappingContext.getRelationships()) {
+            LOGGER.debug("context-after 1: (${})-[:{}]->(${})", mappedRelationship.getStartNodeId(),
+                mappedRelationship.getRelationshipType(), mappedRelationship.getEndNodeId());
+        }
+
         deleteObsoleteRelationships();
+
+        for (MappedRelationship mappedRelationship : mappingContext.getRelationships()) {
+            LOGGER.debug("context-after 2: (${})-[:{}]->(${})", mappedRelationship.getStartNodeId(),
+                mappedRelationship.getRelationshipType(), mappedRelationship.getEndNodeId());
+        }
 
         return compiler.context();
     }
@@ -184,46 +194,34 @@ public class EntityGraphMapper implements EntityMapper {
         CompileContext context = compiler.context();
 
         Set<Long> staleNodeIds = new HashSet<>();
-        Set<MappedRelationship> relationships = new HashSet<>(mappingContext.getRelationships());
-        // A node can only be stale if it's only reachable via one relationship originally in the context
-        Predicate<Long> cannotBeStale = nodeId -> relationships.stream()
-            .filter(r -> r.getStartNodeId() == nodeId || r.getEndNodeId() == nodeId)
-            .count() > 1;
+        for (Mappable x : context.getDeletedRelationships()) {
+            MappedRelationship mappedRelationship = (MappedRelationship) x;
 
-        for (MappedRelationship mappedRelationship : relationships) {
-            // if we cannot remove this relationship from the compile context, it
-            // means the user has deleted the relationship
-            if (!context.removeRegisteredRelationship(mappedRelationship)) {
+            LOGGER.debug("context-del: {}", mappedRelationship);
 
-                LOGGER.debug("context-del: {}", mappedRelationship);
+            // tell the compiler to prepare a statement that will delete the relationship from the graph
+            RelationshipBuilder builder = compiler.unrelate(
+                mappedRelationship.getStartNodeId(),
+                mappedRelationship.getRelationshipType(),
+                mappedRelationship.getEndNodeId(),
+                mappedRelationship.getRelationshipId());
 
-                // tell the compiler to prepare a statement that will delete the relationship from the graph
-                RelationshipBuilder builder = compiler.unrelate(
-                    mappedRelationship.getStartNodeId(),
-                    mappedRelationship.getRelationshipType(),
-                    mappedRelationship.getEndNodeId(),
-                    mappedRelationship.getRelationshipId());
-
-                Object entity = mappingContext.getRelationshipEntity(mappedRelationship.getRelationshipId());
-                if (entity != null) {
-                    ClassInfo classInfo = metaData.classInfo(entity);
-                    if (classInfo.hasVersionField()) {
-                        FieldInfo field = classInfo.getVersionField();
-                        builder.setVersionProperty(field.propertyName(), (Long) field.read(entity));
-                    }
+            Object entity = mappingContext.getRelationshipEntity(mappedRelationship.getRelationshipId());
+            if (entity != null) {
+                ClassInfo classInfo = metaData.classInfo(entity);
+                if (classInfo.hasVersionField()) {
+                    FieldInfo field = classInfo.getVersionField();
+                    builder.setVersionProperty(field.propertyName(), (Long) field.read(entity));
                 }
-
-                // remove all nodes that are referenced by this relationship in the mapping context
-                // this will ensure that stale versions of these objects don't exist
-                staleNodeIds.add(mappedRelationship.getStartNodeId());
-                staleNodeIds.add(mappedRelationship.getEndNodeId());
             }
+
+            // remove all nodes that are referenced by this relationship in the mapping context
+            // this will ensure that stale versions of these objects don't exist
+            staleNodeIds.add(mappedRelationship.getStartNodeId());
+            staleNodeIds.add(mappedRelationship.getEndNodeId());
         }
 
         while (!staleNodeIds.isEmpty()) {
-            // Remove all nodes that are not isolated (that is only in one relationship)
-            // Don't do this as a filter, as this list is needed to calculate further stale nodes
-            staleNodeIds.removeIf(cannotBeStale);
             // Remove all the stale nodes
             staleNodeIds.stream()
                 .map(mappingContext::getNodeEntity)
@@ -366,7 +364,7 @@ public class EntityGraphMapper implements EntityMapper {
             Class startNodeType = srcInfo.getUnderlyingClass();
             Class endNodeType = DescriptorMappings.getType(reader.typeDescriptor());
 
-            LOGGER.debug("{}: mapping reference type: {}", entity, relationshipType);
+            LOGGER.debug("{}{}: mapping reference type: {}", depth, entity, relationshipType);
 
             DirectedRelationship directedRelationship = new DirectedRelationship(relationshipType,
                 relationshipDirection);
@@ -436,7 +434,7 @@ public class EntityGraphMapper implements EntityMapper {
     /**
      * Clears the relationships in the compiler context for the object represented by identity
      *
-     * @param compileContext              the {@link CompileContext} for the current compiler instance
+     * @param compileContext       the {@link CompileContext} for the current compiler instance
      * @param identity             the id of the node at the the 'start' of the relationship
      * @param endNodeType          the class of the entity on the end of the relationship
      * @param directedRelationship {@link DirectedRelationship} representing the relationships to be cleared
@@ -758,10 +756,12 @@ public class EntityGraphMapper implements EntityMapper {
 
         boolean isRelationshipEntity = relationshipBuilder.isRelationshipEntity();
         MappedRelationship mappedRelationshipOutgoing = new MappedRelationship(relNodes.sourceId,
-            relationshipBuilder.type(), relNodes.targetId, isRelationshipEntity ? relationshipBuilder.reference() : null, relNodes.sourceType,
+            relationshipBuilder.type(), relNodes.targetId,
+            isRelationshipEntity ? relationshipBuilder.reference() : null, relNodes.sourceType,
             relNodes.targetType);
         MappedRelationship mappedRelationshipIncoming = new MappedRelationship(relNodes.targetId,
-            relationshipBuilder.type(), relNodes.sourceId, isRelationshipEntity ? relationshipBuilder.reference() : null, relNodes.sourceType,
+            relationshipBuilder.type(), relNodes.sourceId,
+            isRelationshipEntity ? relationshipBuilder.reference() : null, relNodes.sourceType,
             relNodes.targetType);
         if (relationshipBuilder.hasDirection(Relationship.UNDIRECTED)) {
             if (mappingContext.containsRelationship(mappedRelationshipIncoming)) {
@@ -832,7 +832,7 @@ public class EntityGraphMapper implements EntityMapper {
      * was previously deleted from the compile context, but not from the mapping context, this brings both
      * mapping contexts into agreement about the status of this relationship, i.e. it has not changed.
      *
-     * @param compileContext             the {@link CompileContext} for the current statement compiler
+     * @param compileContext      the {@link CompileContext} for the current statement compiler
      * @param srcNodeBuilder      a {@link NodeBuilder} that knows how to create cypher phrases about nodes
      * @param tgtNodeBuilder      a {@link NodeBuilder} that knows how to create cypher phrases about nodes
      * @param relationshipBuilder a {@link RelationshipBuilder} that knows how to create cypher phrases about relationships
