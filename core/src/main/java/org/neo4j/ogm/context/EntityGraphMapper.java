@@ -226,9 +226,9 @@ public class EntityGraphMapper implements EntityMapper {
             this.mappingContext.getRelationships().removeAll(staleRelationships);
             // Iterate the stale relationships and look for other relationships touching the nodes.
             Set<MappedRelationship> newStaleNodeIds = new HashSet<>();
-            for(MappedRelationship staleRelationship : staleRelationships) {
-                for(MappedRelationship staleCandidate : this.mappingContext.getRelationships()) {
-                    if(staleCandidate.getStartNodeId() == staleRelationship.getStartNodeId() || staleCandidate.getEndNodeId() == staleRelationship.getEndNodeId())  {
+            for (MappedRelationship staleRelationship : staleRelationships) {
+                for (MappedRelationship staleCandidate : this.mappingContext.getRelationships()) {
+                    if (staleCandidate.getStartNodeId() == staleRelationship.getStartNodeId() || staleCandidate.getEndNodeId() == staleRelationship.getEndNodeId())  {
                         newStaleNodeIds.add(staleCandidate);
                     }
                 }
@@ -636,26 +636,24 @@ public class EntityGraphMapper implements EntityMapper {
             relNodes = new RelationshipNodes(srcIdentity, tgtIdentity, startNodeType, endNodeType);
         }
 
-        // TODO : move this to a common function
-        if (mappingContext.isDirty(relationshipEntity)) {
+        boolean isDirtyRelationshipEntity = mappingContext.isDirty(relationshipEntity);
+        if (isDirtyRelationshipEntity) {
             context.register(relationshipEntity);
-            if (tgtIdentity >= 0 && srcIdentity >= 0) {
-                MappedRelationship mappedRelationship = createMappedRelationship(relationshipBuilder, relNodes);
-                if (context.removeRegisteredRelationship(mappedRelationship)) {
-                    LOGGER.debug("RE successfully marked for re-writing");
-                } else {
-                    LOGGER.debug("RE is new");
-                }
+        }
+
+        if (tgtIdentity >= 0 && srcIdentity >= 0) {
+            MappedRelationship mappedRelationship = createMappedRelationship(relationshipBuilder, relNodes);
+            if (context.removeRegisteredRelationship(mappedRelationship)) {
+                LOGGER.debug("RE successfully marked for re-writing");
+            } else if (context.getDeletedRelationships().contains(mappedRelationship)) {
+                context.registerRelationshipDoNotTouch(mappedRelationship);
+                LOGGER.debug("RE successfully marked for re-writing");
             }
-        } else {
-            LOGGER.debug("RE is new or has not changed");
         }
 
         // finally we continue mapping the object graph, creating/updating the edge in the graph from START->END nodes.
         // If we approached the RE from its END-NODE, we then continue mapping the object graph from the START_NODE,
         // or, if we approached the RE from its START_NODE, we continue mapping the object graph from the END_NODE.
-        /*Long startIdentity = EntityUtils.identity(startEntity, metaData);
-        Long targetIdentity = EntityUtils.identity(targetEntity, metaData);*/
 
         NodeBuilder srcNodeBuilder = context.visitedNode(startEntity);
         NodeBuilder tgtNodeBuilder = context.visitedNode(targetEntity);
