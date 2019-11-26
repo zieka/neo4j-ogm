@@ -48,6 +48,7 @@ public class CypherContext implements CompileContext {
     private final Map<Long, Long> newNodeIds = new HashMap<>();
 
     private final Set<Mappable> registeredRelationships = new HashSet<>();
+    private final Set<Mappable> doNotTouchRelationships = new HashSet<>();
     private final Set<Mappable> deletedRelationships = new HashSet<>();
 
     private final Set<Object> registry = new HashSet<>();
@@ -80,6 +81,14 @@ public class CypherContext implements CompileContext {
     public void registerRelationship(Mappable mappedRelationship) {
         this.registeredRelationships.add(mappedRelationship);
         this.deletedRelationships.remove(mappedRelationship);
+    }
+
+    @Override
+    public void registerRelationshipDoNotTouch(Mappable mappedRelationship) {
+        this.registeredRelationships.add(mappedRelationship);
+        this.deletedRelationships.remove(mappedRelationship);
+
+        this.doNotTouchRelationships.add(mappedRelationship);
     }
 
     public boolean removeRegisteredRelationship(Mappable mappedRelationship) {
@@ -206,7 +215,7 @@ public class CypherContext implements CompileContext {
                 candidateNodeType.equals(endNodeType)) {
 
                 existsInGraph = true;
-                if (!isAlreadyDeleted(candidate)) {
+                if (!isAlreadyDeleted(candidate) && !doNotTouchRelationships.contains(candidate)) {
                     boundForDeletion.add(candidate);
                     candidatesForDeletion.remove();
                 }

@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.neo4j.ogm.annotation.Relationship;
 import org.neo4j.ogm.annotation.RelationshipEntity;
@@ -192,20 +193,16 @@ public class EntityGraphMapper implements EntityMapper {
      */
     private void deleteObsoleteRelationships() {
         CompileContext context = compiler.context();
-
-        Set<Long> staleNodeIds = new HashSet<>();
-        for (Mappable x : context.getDeletedRelationships()) {
-            MappedRelationship mappedRelationship = (MappedRelationship) x;
-
-            LOGGER.debug("context-del: {}", mappedRelationship);
-
+        Set<MappedRelationship> staleRelationships = new HashSet<>();
+        for (Mappable mappable : context.getDeletedRelationships()) {
+            MappedRelationship mappedRelationship = (MappedRelationship) mappable;
+            LOGGER.debug("Unrelating: {}", mappedRelationship);
             // tell the compiler to prepare a statement that will delete the relationship from the graph
             RelationshipBuilder builder = compiler.unrelate(
                 mappedRelationship.getStartNodeId(),
                 mappedRelationship.getRelationshipType(),
                 mappedRelationship.getEndNodeId(),
                 mappedRelationship.getRelationshipId());
-
             Object entity = mappingContext.getRelationshipEntity(mappedRelationship.getRelationshipId());
             if (entity != null) {
                 ClassInfo classInfo = metaData.classInfo(entity);
@@ -214,21 +211,29 @@ public class EntityGraphMapper implements EntityMapper {
                     builder.setVersionProperty(field.propertyName(), (Long) field.read(entity));
                 }
             }
-
-            // remove all nodes that are referenced by this relationship in the mapping context
-            // this will ensure that stale versions of these objects don't exist
-            staleNodeIds.add(mappedRelationship.getStartNodeId());
-            staleNodeIds.add(mappedRelationship.getEndNodeId());
+            // Add the deleted relationship to the set of stale ones
+            staleRelationships.add(mappedRelationship);
         }
-
-        while (!staleNodeIds.isEmpty()) {
-            // Remove all the stale nodes
-            staleNodeIds.stream()
+        // While there are stale relationships
+        while (!staleRelationships.isEmpty()) {
+            // Remove all the stale nodes connected to them
+            staleRelationships.stream()
+                .flatMap(r -> Stream.of(r.getStartNodeId(), r.getEndNodeId()))
                 .map(mappingContext::getNodeEntity)
                 .filter(Objects::nonNull)
                 .forEach(node -> mappingContext.removeNodeEntity(node, true));
-            // Remove now stale relationship and possibly creating new stale nodes
-            staleNodeIds = mappingContext.removeStaleRelationships(staleNodeIds);
+            // Remove all current stale relationships
+            this.mappingContext.getRelationships().removeAll(staleRelationships);
+            // Iterate the stale relationships and look for other relationships touching the nodes.
+            Set<MappedRelationship> newStaleNodeIds = new HashSet<>();
+            for(MappedRelationship staleRelationship : staleRelationships) {
+                for(MappedRelationship staleCandidate : this.mappingContext.getRelationships()) {
+                    if(staleCandidate.getStartNodeId() == staleRelationship.getStartNodeId() || staleCandidate.getEndNodeId() == staleRelationship.getEndNodeId())  {
+                        newStaleNodeIds.add(staleCandidate);
+                    }
+                }
+            }
+            staleRelationships = newStaleNodeIds;
         }
     }
 
@@ -364,7 +369,7 @@ public class EntityGraphMapper implements EntityMapper {
             Class startNodeType = srcInfo.getUnderlyingClass();
             Class endNodeType = DescriptorMappings.getType(reader.typeDescriptor());
 
-            LOGGER.debug("{}{}: mapping reference type: {}", depth, entity, relationshipType);
+            LOGGER.debug("{}: mapping reference type: {}", entity, relationshipType);
 
             DirectedRelationship directedRelationship = new DirectedRelationship(relationshipType,
                 relationshipDirection);

@@ -33,6 +33,8 @@ public interface CompileContext {
 
     void registerRelationship(Mappable mappable);
 
+    void registerRelationshipDoNotTouch(Mappable mappable);
+
     boolean removeRegisteredRelationship(Mappable mappable);
 
     boolean visited(Object entity, int horizon);
