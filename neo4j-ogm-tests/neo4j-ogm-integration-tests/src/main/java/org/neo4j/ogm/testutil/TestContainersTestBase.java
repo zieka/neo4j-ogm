@@ -2,13 +2,16 @@ package org.neo4j.ogm.testutil;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logging;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.harness.ServerControls;
+import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.ResultTransformer;
+import org.neo4j.harness.Neo4j;
 import org.neo4j.ogm.config.Configuration;
 import org.neo4j.ogm.driver.Driver;
 import org.neo4j.ogm.drivers.bolt.driver.BoltDriver;
@@ -98,9 +101,9 @@ public class TestContainersTestBase {
             if (isEnterpriseEdition) {
                 baseConfigurationBuilder = baseConfigurationBuilder.neo4jConfLocation("classpath:custom-neo4j-ha.conf");
             }
-            final ServerControls embedServerControls = new TestHarnessSupplier().get().newServer();
+            final Neo4j embedServerControls = new TestHarnessSupplier().get().build();
             final Configuration embeddedConfiguration = baseConfigurationBuilder.build();
-            driver = new EmbeddedDriver(embedServerControls.graph(), embeddedConfiguration);
+            driver = new EmbeddedDriver(embedServerControls.defaultDatabaseService(), embeddedConfiguration);
             driver.configure(embeddedConfiguration);
             // the embedded driver will take care of the removal of the temporary database directory.
 
@@ -197,7 +200,8 @@ public class TestContainersTestBase {
         }
         EmbeddedDriver embeddedDriver = (EmbeddedDriver) getDriver();
         GraphDatabaseService graphDatabaseService = embeddedDriver.unwrap(GraphDatabaseService.class);
-        List<String> versions = (List<String>) graphDatabaseService.execute("CALL dbms.components() YIELD versions").next().get("versions");
+        List<String> versions = graphDatabaseService.executeTransactionally(
+            "CALL dbms.components() YIELD versions", Map.of(), result -> (List<String>) result.next().get("versions"));
         return versions.get(0).split("-")[0];
     }
 
