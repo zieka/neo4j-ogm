@@ -158,7 +158,7 @@ public class PropertiesTest extends TestContainersTestBase {
     @Test
     public void shouldMapPropertiesAttributeWithNestedMapToNodeProperties() {
         User user = new User("Frantisek");
-        Map<String, String> address = new HashMap<String, String>();
+        Map<String, String> address = new HashMap<>();
         address.put("city", "London");
         address.put("zipCode", "SW1A 1AA");
         user.putMyProperty("address", address);

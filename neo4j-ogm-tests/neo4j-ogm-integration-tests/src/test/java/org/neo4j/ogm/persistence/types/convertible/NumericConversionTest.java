@@ -66,7 +66,7 @@ public class NumericConversionTest extends TestContainersTestBase {
         individual.setNumberOfPets(301);
         individual.setNumberOfShoes((byte) 101);
         individual.setDistanceFromZoo(215.50f);
-        individual.setFavouriteRadioStations(new Vector<Double>(Arrays.asList(97.4, 105.4, 98.2)));
+        individual.setFavouriteRadioStations(new Vector<>(Arrays.asList(97.4, 105.4, 98.2)));
         individual.primitiveFloatArray = new float[] { 5.5f, 6.6f };
         individual.setPrimitiveByteArray(new byte[] { 1, 2, 3, 4, 5 });
         individual.floatArray = new Float[] { Float.valueOf(1.1f), Float.valueOf(2.2f) };

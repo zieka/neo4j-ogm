@@ -37,7 +37,7 @@ public class Event extends Entity {
 
     @JsonIgnore
     @Relationship(type = "HAS")
-    private Set<Tag> tags = new HashSet<Tag>();
+    private Set<Tag> tags = new HashSet<>();
 
     public Event() {
     }

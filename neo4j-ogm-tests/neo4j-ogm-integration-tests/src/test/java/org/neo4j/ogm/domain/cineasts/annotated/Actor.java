@@ -79,7 +79,7 @@ public class Actor {
         Nomination nomination = new Nomination(movie, this, nominationName, year);
         nominations.add(nomination);
         if (movie.getNominations() == null) {
-            movie.setNominations(new HashSet<Nomination>());
+            movie.setNominations(new HashSet<>());
         }
         movie.getNominations().add(nomination);
         return nomination;

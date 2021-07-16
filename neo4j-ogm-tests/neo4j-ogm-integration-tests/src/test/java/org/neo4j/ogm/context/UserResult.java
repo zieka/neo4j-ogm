@@ -29,9 +29,9 @@ public class UserResult {
     private String password;
     private Long id;
 
-    private Map<String, Object> profile = new HashMap<String, Object>();
+    private Map<String, Object> profile = new HashMap<>();
 
-    private Map<String, Object> associatedProfile = new HashMap<String, Object>();
+    private Map<String, Object> associatedProfile = new HashMap<>();
 
     public Map<String, Object> getProfile() {
         return profile;

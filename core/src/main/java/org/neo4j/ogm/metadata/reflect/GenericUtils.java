@@ -153,7 +153,7 @@ public final class GenericUtils {
 
     private static Map<TypeVariable<?>, Type> getTypeVariableMap(final Class<?> targetType,
         Class<?> functionalInterface) {
-        Map<TypeVariable<?>, Type> map = new HashMap<TypeVariable<?>, Type>();
+        Map<TypeVariable<?>, Type> map = new HashMap<>();
 
         // Populate interfaces
         populateSuperTypeArgs(targetType.getGenericInterfaces(), map, functionalInterface != null);
